@@ -24,17 +24,28 @@
 (define style-sheet
   `((*haskell* . ,(lambda (tag str)
 		    (colorize-haskell str)))
+    (mono . ,(lambda (_ str)
+	       `(tt ,str)))
+    (*break* . ,(lambda _ '(br)))
     (*title* . ,(lambda (_ title)
 		  `(h2 ,title)))
     (*section* . ,(lambda (_ title)
 		    `(h3 ,title)))
     (*paragraph* . ,(lambda (_ . nodes)
-		      `(section ,@nodes)))
+		      `(p (section ,@nodes))))
     (*link* . ,(lambda (_ link href)
 		 `(a (@ (href ,href))
 		     ,link)))
     (*default* . ,(lambda x x))
     (*text* . ,(lambda (tag str) str))))
 
-(define (render-post post)
+(define (render-html post)
   (pre-post-order post style-sheet))
+
+(define (render-page page file)
+  (when (file-exists? file)
+    (delete-file file))
+  (with-output-to-file file
+    (lambda ()
+      (put-html
+       (render-html page)))))

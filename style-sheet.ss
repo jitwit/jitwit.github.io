@@ -1,0 +1,40 @@
+(import (chez sxml-mini))
+
+;; plan: write haskell string to some temp file, call HsColor -html -partial on it,
+;; use process to read the system output directly
+
+(define (colorize-haskell haskell-string)
+  (let* ((tmp (format "/tmp/~a"
+  		      (gensym->unique-string (gensym))))
+  	 (hscolor (format "HsColour -css -partial < ~a" tmp)))
+    (with-output-to-file tmp
+      (lambda ()
+  	(display haskell-string)))
+    (let* ((ports (process hscolor))
+	   (out (car ports))
+	   (in (cadr ports)))
+      (let loop ((x (read-char out)) (result '()))
+	(if (eof-object? x)
+	    (begin
+	      (close-input-port out)
+	      (close-output-port in)
+	      `(*raw-html* ,(list->string (reverse result))))
+	    (loop (read-char out) (cons x result)))))))
+
+(define style-sheet
+  `((*haskell* . ,(lambda (tag str)
+		    (colorize-haskell str)))
+    (*title* . ,(lambda (_ title)
+		  `(h2 ,title)))
+    (*section* . ,(lambda (_ title)
+		    `(h3 ,title)))
+    (*paragraph* . ,(lambda (_ . nodes)
+		      `(section ,@nodes)))
+    (*link* . ,(lambda (_ link href)
+		 `(a (@ (href ,href))
+		     ,link)))
+    (*default* . ,(lambda x x))
+    (*text* . ,(lambda (tag str) str))))
+
+(define (render-post post)
+  (pre-post-order post style-sheet))

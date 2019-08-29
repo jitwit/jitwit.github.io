@@ -1,4 +1,6 @@
-pages ::= index dfs-alga
+pages ::= \
+	index \
+	dfs-alga
 
 %.html : %.ss
 	scheme -q --script $<
@@ -11,5 +13,3 @@ clean:
 	rm *~
 
 .PHONY: all
-
-

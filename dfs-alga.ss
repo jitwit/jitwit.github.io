@@ -6,9 +6,64 @@
 (define video-link "https://www.youtube.com/watch?v=EdQGLewU-8k")
 (define Data.Graph "http://hackage.haskell.org/package/containers-0.6.2.1/docs/Data-Graph.html")
 (define core-data-type
-  (render-html
-   '(*haskell*
-     "data Graph a = Empty | Vertex a | Overlay (Graph a) (Graph a) | Connect (Graph a) (Graph a)")))
+  '(*haskell*
+    "data Graph a = Empty | Vertex a | Overlay (Graph a) (Graph a) | Connect (Graph a) (Graph a)"))
+
+(define dfs-implementation
+  '(*haskell* "
+dfsForestFrom\' :: [Int] -> AdjacencyIntMap -> Forest Int
+dfsForestFrom\' vs g = evalState (explore vs) IntSet.empty where
+  explore (v:vs) = discovered v >>= \\case
+    True -> (:) <$> walk v <*> explore vs
+    False -> explore vs
+  explore [] = return []
+  walk v = Node v <$> explore (adjacent v)
+  adjacent v = IntSet.toList (postIntSet v g)
+  discovered v = do new <- gets (not . IntSet.member v)
+                    when new $ modify\' (IntSet.insert v)
+                    return new
+     "))
+
+(define top-sort-implementation
+  '(*haskell* "
+type Cycle = NonEmpty
+data NodeState = Entered | Exited
+data S = S { parent :: IntMap.IntMap Int
+           , entry  :: IntMap.IntMap NodeState
+           , order  :: [Int] }
+
+topSort\' :: (MonadState S m, MonadCont m)
+         => AdjacencyIntMap -> m (Either (Cycle Int) [Int])
+topSort\' g = callCC $ \\cyclic ->
+  do let vertices = map fst $ IntMap.toDescList $ adjacencyIntMap g
+         adjacent = IntSet.toDescList . flip postIntSet g
+         dfsRoot x = nodeState x >>= \\case
+           Nothing -> enterRoot x >> dfs x >> exit x
+           _       -> return ()
+         dfs x = forM_ (adjacent x) $ \\y ->
+                   nodeState y >>= \\case
+                     Nothing      -> enter x y >> dfs y >> exit y
+                     Just Exited  -> return ()
+                     Just Entered -> cyclic . Left . retrace x y =<< gets parent
+     forM_ vertices dfsRoot
+     Right <$> gets order
+  where
+    nodeState v = gets (IntMap.lookup v . entry)
+    enter u v = modify\' (\\(S m n vs) -> S (IntMap.insert v u m)
+                                          (IntMap.insert v Entered n)
+                                          vs)
+    enterRoot v = modify\' (\\(S m n vs) -> S m (IntMap.insert v Entered n) vs)
+    exit v = modify\' (\\(S m n vs) -> S m (IntMap.alter (fmap leave) v n) (v:vs))
+      where leave = \\case
+              Entered -> Exited
+              Exited  -> error \"Internal error: dfs search order violated\"
+    retrace curr head parent = aux (curr :| []) where
+      aux xs@(curr :| _)
+        | head == curr = xs
+        | otherwise = aux (parent IntMap.! curr <| xs)
+              "))
+
+
 
 (define Content
   `((*title* ,*title*)
@@ -54,11 +109,15 @@ a series of "
     "Previously, alga wrapped the graph type from "
     (*link* "Data.Graph" ,Data.Graph)
     " to take advantage of existing the dfs implementation."
+    ,dfs-implementation
+    (*section* "Topological Sort")
+    ,top-sort-implementation
     ))
 
 (define alga-dfs-post
   `(html
     (head
+     (*local-css*)
      (meta (@ (charset "UTF-8")))
      (title "DFS Alga"))
     (body ,@Content)))

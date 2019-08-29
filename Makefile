@@ -1,12 +1,15 @@
-index.html:
-	echo "(run)" | scheme -q "index.ss"
+pages ::= index dfs-alga
 
-dfs-alga.html:
-	echo "(run)" | scheme -q "dfs-alga.ss"
+%.html : %.ss
+	scheme -q --script $<
+
+all:
+	make $(pages:=.html)
 
 clean:
-	find . -name "*.so" -exec rm {} \;
-	find . -name "*~" -exec rm {} \;
+	rm *.html
+	rm *~
 
+.PHONY: all
 
 

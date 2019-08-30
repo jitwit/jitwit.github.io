@@ -22,39 +22,16 @@
 	      `(*raw-html* ,(list->string (reverse result))))
 	    (loop (read-char out) (cons x result)))))))
 
-(define hs-css
-  `(style "
-.hs-keyword { color: sienna; }
-.hs-conid { color: teal; } 
-.hs-conop { color: teal; } 
-.hs-keyglyph { color: steelblue; }
-.hs-layout { color: steelblue; }
-.hs-definition { color: darkslateblue; }
-.hs-varid { color: darkslateblue; }
-.hs-varop { color: crimson; }
-               "))
-
-(define (code-class class snippet)
-  `(span (@ (class ,class))
-	 ,snippet))
-
-(define (hs-keyword keyword)
-  (code-class "hs-keyword" keyword))
-
-(define (hs-conid conid)
-  (code-class "hs-conid" conid))
-
-(define (hs-varid varid)
-  (code-class "hs-varid" varid))
-
 (define style-sheet
   `((*haskell* . ,(lambda (tag str)
 		    (colorize-haskell str)))
     (mono . ,(lambda (_ str)
 	       `(tt ,str)))
     (*break* . ,(lambda _ '(br)))
-    (*local-css* . ,(lambda _
-		      hs-css))
+    (*haskell-css* . ,(lambda _
+			'(link (@ (rel "stylesheet")
+				  (type "text/css")
+				  (href "haskell.css")))))
     (*title* . ,(lambda (_ title)
 		  `(h2 ,title)))
     (*section* . ,(lambda (_ title)

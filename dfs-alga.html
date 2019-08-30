@@ -1,26 +1,20 @@
-<html><head><style>
-.hs-keyword { color: sienna; }
-.hs-conid { color: teal; } 
-.hs-conop { color: teal; } 
-.hs-keyglyph { color: steelblue; }
-.hs-layout { color: steelblue; }
-.hs-definition { color: darkslateblue; }
-.hs-varid { color: darkslateblue; }
-.hs-varop { color: crimson; }
-               </style><meta charset='UTF-8'/><title>DFS Alga</title></head><body><h2>Expressing graph searches in haskell</h2><p><section>Recently, I helped contribute to <a href='https://github.com/snowleopard/alga'>alga</a>, a fun haskell library for working with graphs developped by
+<html><head><link rel='stylesheet' type='text/css' href='haskell.css'/><meta charset='UTF-8'/><title>DFS Alga</title></head><body><h2>Expressing graph searches in haskell</h2><p><section>Recently, I helped contribute to <a href='https://github.com/snowleopard/alga'>alga</a>, a fun haskell library for working with graphs developed by
 Andrey Mokhov. My first contribution implemented breadth first
 search. The second took ideas from the first to improve the existing
 implementations of depth first search and topological sort. This post
 describes the implementations and how haskell lends itself well to the
-expression of these classic algorithms.</section></p><h3>Backround on alga</h3><p><section>With alga, graphs are built using a handful of building blocks,
-after which they may be instantiated to a suitable structure for
-further processing. Here is the core data type:<pre><span class='hs-keyword'>data</span> <span class='hs-conid'>Graph</span> <span class='hs-varid'>a</span> <span class='hs-keyglyph'>=</span> <span class='hs-conid'>Empty</span> <span class='hs-keyglyph'>|</span> <span class='hs-conid'>Vertex</span> <span class='hs-varid'>a</span> <span class='hs-keyglyph'>|</span> <span class='hs-conid'>Overlay</span> <span class='hs-layout'>(</span><span class='hs-conid'>Graph</span> <span class='hs-varid'>a</span><span class='hs-layout'>)</span> <span class='hs-layout'>(</span><span class='hs-conid'>Graph</span> <span class='hs-varid'>a</span><span class='hs-layout'>)</span> <span class='hs-keyglyph'>|</span> <span class='hs-conid'>Connect</span> <span class='hs-layout'>(</span><span class='hs-conid'>Graph</span> <span class='hs-varid'>a</span><span class='hs-layout'>)</span> <span class='hs-layout'>(</span><span class='hs-conid'>Graph</span> <span class='hs-varid'>a</span><span class='hs-layout'>)</span></pre><tt>Empty</tt> denotes an empty graph and <tt>Vertex a</tt> a graph with one vertex <tt>a</tt>. More complex graphs are constructed by combining
-smaller ones in two ways. <tt>Overlay g h</tt> forms a graph whose vertex and edges sets are the unions
-of <tt>g</tt>'s and <tt>h</tt>'s. <tt>Connect g h</tt> is similar, but additionally includes an edge going from each vertex
-    of <tt>g</tt> to each vertex of <tt>h</tt>. Given a graph of type <tt>Graph a</tt>, we are ready to process it. Conversion to a given structure is
-usually done by the appropriate fold over the core data type. More
-complete and lucid introductions to alga in its design may be found in
-a series of <a href='https://github.com/snowleopard/alga#blog-posts'>blog posts</a> or if you prefer video, <a href='https://www.youtube.com/watch?v=EdQGLewU-8k'>this talk</a>.</section></p><h3>Depth First Search</h3>Previously, alga wrapped the graph type from <a href='http://hackage.haskell.org/package/containers-0.6.2.1/docs/Data-Graph.html'>Data.Graph</a> to take advantage of existing the dfs implementation.<pre>
+expression of these classic algorithms.</section></p><h3>Backround on alga</h3><p><section>Graphs are constructed using a handful of building blocks, from
+empty graphs, vertices, overlays, and connections. Overlays union the
+vertex and edge sets of graphs. Connections do the same, but include
+edges from each vertex of one to each vertex of the other. The
+expressions thus formed may later be instantiated to an appropriate
+representation for further processing. Here is the core data type used
+for this algebraic framework: <pre><span class='hs-keyword'>data</span> <span class='hs-conid'>Graph</span> <span class='hs-varid'>a</span> <span class='hs-keyglyph'>=</span> <span class='hs-conid'>Empty</span> <span class='hs-keyglyph'>|</span> <span class='hs-conid'>Vertex</span> <span class='hs-varid'>a</span> <span class='hs-keyglyph'>|</span> <span class='hs-conid'>Overlay</span> <span class='hs-layout'>(</span><span class='hs-conid'>Graph</span> <span class='hs-varid'>a</span><span class='hs-layout'>)</span> <span class='hs-layout'>(</span><span class='hs-conid'>Graph</span> <span class='hs-varid'>a</span><span class='hs-layout'>)</span> <span class='hs-keyglyph'>|</span> <span class='hs-conid'>Connect</span> <span class='hs-layout'>(</span><span class='hs-conid'>Graph</span> <span class='hs-varid'>a</span><span class='hs-layout'>)</span> <span class='hs-layout'>(</span><span class='hs-conid'>Graph</span> <span class='hs-varid'>a</span><span class='hs-layout'>)</span></pre>Two of the standard representations for directed graphs use
+staple datastructures from <a href='http://hackage.haskell.org/package/containers-0.6.2.1'>containers</a>, <tt>Data.Map a (Data.Set a)</tt> and Data.IntMap Data.IntSet. Careful use of compiler directives
+to achieve fusion as well as good merge complexeties of these
+datastructures mean that alga excels in graph construction
+benchmarks.</section></p><p><section> More information about alga, its design, and its laws may be
+found in a series of <a href='https://github.com/snowleopard/alga#blog-posts'>blog posts</a> and in <a href='https://www.youtube.com/watch?v=EdQGLewU-8k'>this talk</a>.</section></p><h3>Depth First Search</h3>Previously, alga wrapped the graph type from <a href='http://hackage.haskell.org/package/containers-0.6.2.1/docs/Data-Graph.html'>Data.Graph</a> to take advantage of existing the dfs implementation.<pre>
 <span class='hs-definition'>dfsForestFrom'</span> <span class='hs-keyglyph'>::</span> <span class='hs-keyglyph'>[</span><span class='hs-conid'>Int</span><span class='hs-keyglyph'>]</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>AdjacencyIntMap</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Forest</span> <span class='hs-conid'>Int</span>
 <span class='hs-definition'>dfsForestFrom'</span> <span class='hs-varid'>vs</span> <span class='hs-varid'>g</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>evalState</span> <span class='hs-layout'>(</span><span class='hs-varid'>explore</span> <span class='hs-varid'>vs</span><span class='hs-layout'>)</span> <span class='hs-conid'>IntSet.empty</span> <span class='hs-keyword'>where</span>
   <span class='hs-varid'>explore</span> <span class='hs-layout'>(</span><span class='hs-varid'>v</span><span class='hs-conop'>:</span><span class='hs-varid'>vs</span><span class='hs-layout'>)</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>discovered</span> <span class='hs-varid'>v</span> <span class='hs-varop'>&gt;&gt;=</span> <span class='hs-keyglyph'>\</span><span class='hs-keyword'>case</span>

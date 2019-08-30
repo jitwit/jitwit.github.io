@@ -1,8 +1,9 @@
 .hs-keyword { color: sienna; }
-.hs-conid { color: teal; } 
-.hs-conop { color: teal; } 
 .hs-keyglyph { color: sienna; }
 .hs-layout { color: sienna; }
+.hs-comment { color: darkred; }
+.hs-conid { color: teal; } 
+.hs-conop { color: teal; } 
 .hs-definition { color: darkslateblue; }
 .hs-varid { color: darkslateblue; }
 .hs-varop { color: darkslateblue; }

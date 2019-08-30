@@ -2,7 +2,7 @@ pages ::= \
 	index \
 	dfs-alga
 
-%.html : %.ss
+%.html : %.ss style-sheet.ss
 	scheme -q --script $<
 
 all:
@@ -12,4 +12,4 @@ clean:
 	rm *.html
 	rm *~
 
-.PHONY: all
+# .PHONY: all

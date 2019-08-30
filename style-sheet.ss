@@ -1,8 +1,5 @@
 (import (chez sxml-mini))
 
-;; plan: write haskell string to some temp file, call HsColor -html -partial on it,
-;; use process to read the system output directly
-
 (define (colorize-haskell haskell-string)
   (let* ((tmp (format "/tmp/~a"
   		      (gensym->unique-string (gensym))))
@@ -36,8 +33,8 @@
 		       `(h1 ,title)))
     (*section* . ,(lambda (_ title)
 		    `(h2 ,title)))
-    (*sub-section* . ,(lambda (_ title)
-			`(h3 ,title)))
+    (*subsection* . ,(lambda (_ title)
+		       `(h3 ,title)))
     (*paragraph* . ,(lambda (_ . nodes)
 		      `(p (section ,@nodes))))
     (*link* . ,(lambda (_ link href)

@@ -8,4 +8,5 @@
     (body
      (*link* "alga wip post" "dfs-alga.html"))))
 
-(render-page index-page "index.html")
+(define (render)
+  (render-page index-page "index.html"))

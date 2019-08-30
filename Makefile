@@ -3,7 +3,7 @@ pages ::= \
 	dfs-alga
 
 %.html : %.ss style-sheet.ss
-	scheme -q --script $<
+	echo "(time (render))" | scheme -q $<
 
 all:
 	make $(pages:=.html)

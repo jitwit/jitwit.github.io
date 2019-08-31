@@ -70,28 +70,43 @@ dfsForestFrom' vs g = evalState (explore vs) IntSet.empty where
 
 (define top-sort-state
   '(*haskell* "
-data NodeState = Entered | Exited
-data S = S { parent :: IntMap.IntMap Int
-           , entry  :: IntMap.IntMap NodeState
-           , order  :: [Int] }
-
--- state query/manipulation
 nodeState v = gets (IntMap.lookup v . entry)
+
 enterRoot v = modify\' (\\(S m n vs) -> S m (IntMap.insert v Entered n) vs)
+
 enter u v = modify\' (\\(S m n vs) -> S (IntMap.insert v u m)
                                       (IntMap.insert v Entered n)
                                       vs)
+
 exit v = modify\' (\\(S m n vs) -> S m (IntMap.alter (fmap leave) v n) (v:vs))
   where leave = \\case
           Entered -> Exited
           Exited  -> error \"Internal error: dfs search order violated\""))
 
-(define top-sort-implementation
+(define top-sort-types
   '(*haskell* "
-type Cycle = NonEmpty
+data NodeState = Entered | Exited
 
+data S = S { parent :: IntMap.IntMap Int
+           , entry  :: IntMap.IntMap NodeState
+           , order  :: [Int] }"))
+
+(define top-sort-cycle
+  '(*haskell*
+    "type Cycle = NonEmpty
+
+retrace :: Int -> Int -> IntMap Int -> Cycle Int
+retrace curr head parent = aux (curr :| []) where
+  aux xs@(curr :| _)
+    | head == curr = xs
+    | otherwise = aux (parent IntMap.! curr <| xs)"))
+
+
+(define top-sort-core
+  '(*haskell* "
 topSort\' :: (MonadState S m, MonadCont m)
-         => AdjacencyIntMap -> m (Either (Cycle Int) [Int])
+         => AdjacencyIntMap
+         -> m (Either (Cycle Int) [Int])
 topSort\' g = callCC $ \\cyclic ->
   do let vertices = map fst $ IntMap.toDescList $ adjacencyIntMap g
          adjacent = IntSet.toDescList . flip postIntSet g
@@ -104,12 +119,7 @@ topSort\' g = callCC $ \\cyclic ->
                      Just Exited  -> return ()
                      Just Entered -> cyclic . Left . retrace x y =<< gets parent
      forM_ vertices dfsRoot
-     Right <$> gets order
-  where
-    retrace curr head parent = aux (curr :| []) where
-      aux xs@(curr :| _)
-        | head == curr = xs
-        | otherwise = aux (parent IntMap.! curr <| xs)"))
+     Right <$> gets order"))
 
 (define kl-snippet
   '(*haskell*
@@ -244,8 +254,8 @@ to search. Two mutually recursive functions drive the computation, "
      (mono "walk")
      " builds a tree from its argument, passing neighboring vertices back to "
      (mono "explore.")
-     " To this end, the necessary state is keeping track of which
-vertices have been visited, nothing else. A bottom-up description:"
+     " To this end, the necessary (and sufficient) state is keeping
+track of which vertices have been visited. A bottom-up description:"
      (enum (item
 	    (mono "adjacent v")
 	    " exists because it's more pleasant to read than "
@@ -280,55 +290,134 @@ recursive "
 	    ".")))
     (*paragraph*
      (mono "dfsForestFrom\'")
-     " has the tick "
-     " because it is a function internal to the module. The following
-three functions are the ones actually exported, matching the original
-API from "
+     " has the tick because it is a function internal to the
+module. The following three functions are the ones actually exported,
+matching the original API from "
      (mono "Data.Graph") ":"
      ,dfs-api)))
 
 (define topological-section
   `((*section* "Topological Sort")
     (*paragraph*
-     "The goals for implementing topological sort are loftier than for
-dfs. Given a graph, we return either a valid topological ordering of
-the vertices or a cycle. If there the graph is acyclic, we want to
-produce the lexicographically smallest such ordering (addressing an
-old "
+     "The goals for implementing topological sort are more complex
+than for dfs. Given a directed graph, we return either a valid
+topological ordering of the vertices or a cycle. If there the graph is
+indeed acyclic, we want to produce the lexicographically smallest such
+ordering (addressing an old "
      (*link* "issue" "https://github.com/snowleopard/alga/issues/2")
-     "). These increased demands are
-reflected in various ways in the implementation; more state is
-threaded, a hairier monad is requested, and the compactness of dfs is
-gone. All in all, it's more interesting.")
+     ").")
+    (*paragraph*
+     "These increased demands are reflected in various ways in the
+implementation; more state is threaded, a hairier monad is requested,
+and the compactness of dfs is gone. It's less concise, but more
+interesting. Unlike the dfs implementaiton, I'll split up the
+presentation for clarity.")
     (*subsection* "State")
-    "In order to produce a cycle, we need to keep track of parent
-pointers, as well as if a vertex has been fully processed, or if its
-descendents are currently being expanded. Also, root vertices don't
-have parents, so their state must be entered differently. The state
-representation used is then:"
-    ,top-sort-state
-    "where "
-    (mono "parent")
-    " holds a table of parent pointers, "
-    (mono "entry")
-    " a table of node states, and "
-    (mono "order")
-    " the eventual topological ordering."
-    "the parent table is not updated when entering root nodes,
-thus two different functions."
+    (*paragraph*
+     "The information here is uninteresting, but included for
+thoroughness. Here are internal search state types:"
+     ,top-sort-types
+     "The state is represented as a record with three parts: parent
+pointers stored in an "
+     (mono "IntMap Int")
+     ", node states as "
+     (mono "Entered")
+     " or "
+     (mono "Exited")
+     ", and a list of vertices ordered by exit time (the eventual
+topological ordering). The interface to this state includes:"
+     (enum
+      (item
+       (mono "nodeState")
+       " to query if a node is unvisited, being processed, or exited.")
+      (item
+       (mono "enter")
+       " is called when visiting a vertex. The parent vertex and the
+node state are updated.")
+      (item
+       (mono "enterRoot")
+       " to explore a new component of the search tree. There is no
+parent to enter, only the entry table is updated.")
+      (item
+       (mono "exit")
+       " called when the given vertex's descendents have been processed."))
+     ,top-sort-state
+     "Vertices are visited once and exited once. An error is thrown when
+this isn't the case (never).")
     (*subsection* "Monad")
-    "The schemer in me was pleased to spot a decent opportunity to use "
-    (mono "callCC")
-    ". If a cycle is discovered, it allows the computation to
-terminate immediately and also avoids the wrapping/unwarpping of some
-part of the computation in "
-    (mono "Either")
-    " until the very end. What was a simple "
-    ,dfs-state-type
-    " has morphed into "
-    ,topo-state-type
+    (*paragraph*
+     "The search is characterized by working over state held in a record of type "
+     (mono "S")
+     " and by the ability to report a cycle. Whereas the dfs
+implementation worked over "
+     (mono "State IntSet a")
+     " the monad here is "
+     (mono "(MonadState S m, MonadCont m) => m a")
+     ".")
+    (*paragraph*
+     "The schemer in me was pleased to spot a decent opportunity for "
+     (mono "callCC")
+     ". If a cycle is discovered, it allows the computation to
+terminate immediately and it also avoids the wrapping/unwarpping of
+some part of the computation in "
+     (mono "Either")
+     " until the very end.")
+    (*subsection* "Cycles")
+    (*paragraph*
+     "The cycle construction function is called when a back-edge is
+encountered during the sort. It cons's parents to the cycle until the
+ancestor that was Entered but not Exited is reached."
+     ,top-sort-cycle
+     "The remarkable aspect is the type of cycles, which was informed
+by pesky compiler warnings and advice from Andrey Mokhov about how to
+best get rid of them. He suggested way to avoid incomplete pattern
+warnings was to find a better data structure--one that couldn't
+represent impossible state. "
+     (mono "NonEmpty")
+     " it is!")
     (*subsection* "Implementation")
-    ,top-sort-implementation))
+    "At long last, the meat of the implementation:"
+    ,top-sort-core
+    (*paragraph*
+     "A topological sort is an ordering of the vertices by exit time
+during depth first search. So, to ensure the lexicographically
+smallest ordering, we procrastinate exploring smaller vertices as long
+as possible. "
+     "The graphs "
+     (mono "vertices")
+     " are considered in descending order and "
+     (mono "adjacent v")
+     " is specified as "
+     (mono "toDescList . flip postIntSet g"))
+    (*paragraph*
+     "I find it satisfying that this implementation comes close (in my
+mind at least) to the pseudocode from the classic CLSR algorithms
+book. There, top sort is specified as:"
+     (enum
+      (mono "Topological-sort(G):")
+      (item
+       "call "
+       (mono "DFS(G)")
+       " to compute finishing times for each vertex"
+       (*break*)
+       "(the for loop in DFS is exactly "
+       (mono "forM_ vertices dfsRoot")
+       " and "
+       (mono "DFS-VISIT(G,v)")
+       " corresponds to "
+       (mono "dfs")
+       " in the let clause).")
+      (item
+       "as each vertex is finished, insert in onto the front of a linked list"
+       (*break*)
+       "(precisely what "
+       (mono "exit")
+       " does).")
+      (item
+       "Return the linked list"
+       (*break*)
+       "("(mono "Right <$> gets order") ")."))
+     )))
 
 (define alga-dfs-post
   `(html

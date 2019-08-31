@@ -26,10 +26,10 @@ empty :: Ord a => AdjacencyMap a
 empty = AM Map.empty
 
 vertex :: Ord a => a -> AdjacencyMap a
-vertex x = AM $ IntMap.singleton x IntSet.empty
+vertex x = AM $ Map.singleton x Set.empty
 
 overlay :: Ord a => AdjacencyMap a -> AdjacencyMap a -> AdjacencyMap a
-overlay (AM x) (AM y) = AM $ IntMap.unionWith IntSet.union x y
+overlay (AM x) (AM y) = AM $ Map.unionWith Set.union x y
 
 connect :: Ord a => AdjacencyMap a -> AdjacencyMap a -> AdjacencyMap a
 connect (AM x) (AM y) = AM $ Map.unionsWith Set.union
@@ -206,13 +206,15 @@ overlay, as well as an edge from every vertex of "
      " data type can be seen as a DSL for graph construction. In fact,
 it corresponds to an initial encoding of the language. Alga also
 supplies a final encoding with the type class "
+     (mono "Graph g")
+     ", which requires analogues for the type constructors of the data
+type specified as functions "
+     (mono "empty, vertex, overlay, connect")
+     " for membership. There is also a type class "
      (mono "ToGraph")
-     ". A type "
-     (mono "g")
-     " with a "
-     (mono "ToGraph")
-     " instance means that it can be converted to an algebraic graph
-expression by "
+     " for types that can be converted to the "
+     (mono "Graph")
+     " ADT by way of "
      (mono "toGraph :: ToGraph g => g -> Graph (ToVertex g)")
      ". These graph expressions are in turn \"interpreted\" by way of
 some fold over the "
@@ -245,25 +247,21 @@ laws, I'd suggest checking out any of the following: "
      ".")
     (*subsection* "Previously")
     (*paragraph*
-     "There is a lot of power that comes from the above design. For any data type "
-     (mono "g")
-     " with a "
+     ("Given a type with a ")
      (mono "ToGraph g")
-     " instance, alga is able to use existing code from "
+     " instance, we can use code from "
      (*link* "Data.Graph" ,Data.Graph)
-     " simply by defining conversions between a few
-representations. For example, here is enough glue to unlock existing
-capabilites for graphs with "
-     (mono "Ord (ToVertex g)")
-     " vertices: ")
-    ,kl-snippet
+     " simply by defining a conversion form AdjacencyMaps to the Graph type defined there.
+The glue to to do so: "
+     ,kl-snippet)
     (*paragraph*
      (mono "Data.Graph")
      " provides good performance for the functions it does export,
-since it works on adjacency maps represented as "
+since it works on memory-compact adjacency maps represented as "
      (mono "Array Int [Int]")
      ". Unfortunately, the array-based representation does not play
-well with alga's algebraic coneception of graphs. For arbitrary "
+well with alga's algebraic graphs, so it's not possible to skip this
+conversion step. For arbitrary "
      (mono "ToGraph g")
      "'s the result is three passes converting representations: "
      (enum
@@ -271,8 +269,12 @@ well with alga's algebraic coneception of graphs. For arbitrary "
       (item (mono "AdjacencyMap a") " -> " (mono "GraphKL a"))
       (item (mono "Forest Int") " -> " (mono "Forest a")
 	    "  (in the case of " (mono "dfs") ")")))
-    "The new implementation is basically a response to the question,
-would it be better to avoid conversion by operating on adjacency maps directly?"))
+    "The above describes the previous approach to implementing dfs in
+alga. It's a testament to the flexibility offered by the DSL approach
+to library design. So, the new dfs implementation is basically a
+response to the question, would it be better to avoid conversion by
+operating on adjacency maps directly? The question is answered
+affirmatively, by benchmarking!"))
 
 (define depth-first-section
   `((*section* "Depth First Search")
@@ -459,6 +461,11 @@ book. There, top sort is specified as:"
        (*break*)
        "("(mono "Right <$> gets order") ").")))))
 
+(define benchmarks
+  `((*section* "Benchmarks")
+    "coming soon")
+  )
+
 (define alga-dfs-post
   `(html
     (head
@@ -471,11 +478,12 @@ book. There, top sort is specified as:"
      ,@preamble
      ,@depth-first-section
      ,@topological-section
-     ,@background)))
+     ,@background
+     ,@benchmarks)))
 
 (define (render)
   (render-page alga-dfs-post "dfs-alga.html"))
 
+
+
 (render)
-
-

@@ -17,26 +17,26 @@
   '(*haskell*
     "data Graph a = Empty | Vertex a | Overlay (Graph a) (Graph a) | Connect (Graph a) (Graph a)"))
 
-(define foldg-adjacency-intmap
+(define foldg-tograph
   '(*haskell*
     "
-newtype AdjacencyIntMap = AM { adjacencyIntMap :: IntMap IntSet }
+newtype AdjacencyMap a = AM { adjacencyMap :: Map a (Set a) }
 
-empty :: AdjacencyIntMap 
-empty = AM IntMap.empty
+empty :: Ord a => AdjacencyMap a 
+empty = AM Map.empty
 
-vertex :: Int -> AdjacencyIntMap
+vertex :: Ord a => a -> AdjacencyMap a
 vertex x = AM $ IntMap.singleton x IntSet.empty
 
-overlay :: AdjacencyIntMap -> AdjacencyIntMap -> AdjacencyIntMap
+overlay :: Ord a => AdjacencyMap a -> AdjacencyMap a -> AdjacencyMap a
 overlay (AM x) (AM y) = AM $ IntMap.unionWith IntSet.union x y
 
-connect :: AdjacencyIntMap -> AdjacencyIntMap -> AdjacencyIntMap
-connect (AM x) (AM y) = AM $ IntMap.unionsWith IntSet.union
-    [ x, y, IntMap.fromSet (const $ IntMap.keysSet y) (IntMap.keysSet x) ]
+connect :: Ord a => AdjacencyMap a -> AdjacencyMap a -> AdjacencyMap a
+connect (AM x) (AM y) = AM $ Map.unionsWith Set.union
+    [ x, y, Map.fromSet (const $ Map.keysSet y) (Map.keysSet x) ]
 
-toAdjacencyIntMap :: ToVertex t ~ Int => t -> AdjacencyIntMap
-toAdjacencyIntMap = foldg empty vertex overlay connect"))
+toAdjacencyMap :: Ord (ToVertex g) => g -> AdjacencyMap a
+toAdjacencyMap = foldg empty vertex overlay connect"))
 
 (define dfs-api
   '(*haskell* "
@@ -165,35 +165,76 @@ from the containers package, "
      " vertices. These are the representations the implementations are concerned with.")))
 
 (define background
-  `((*section* "Background")
-    (*subsection* "alga")
+  `((*section* "Alga Background")
+    "A brief introduction to alga, explaining where the
+implementations fit in."
+    (*subsection* "Core Idea")
     (*paragraph*
-     "Using alga, graphs are constructed using a handful of building
-blocks--from empty graphs, vertices, overlays, and
-connections. Overlays union the vertex and edge sets of
-graphs. Connections do the same, but include edges from each vertex of
-one to each vertex of the other. The expressions thus formed may later
-be instantiated to an appropriate representation for further
-processing. Here is the core data type used for this algebraic
-framework: "
+     "With alga, graphs are constructed algebraically. A (di-)graph is
+some object with a set of vertices and a set edges, ordered pairs of
+vertices. Alga expresses this by "
      ,core-data-type
-     "Two of the standard representations for directed graphs use
-staple datastructures from "
-     (*link* "containers" ,containers)
-     ", "
-     (mono "Data.Map a (Data.Set a)")
+     "The vertices are drawn from elements of some type "
+     (mono "a")
+     " and wrapped by the "
+     (mono "Vertex")
+     " constructor. This construction is algebraic in the sense that
+there are two closed operations for building graphs from other
+graphs, "
+     (mono "Overlay")
      " and "
-     (mono "Data.IntMap Data.IntSet")
-     ". Conversion to these representations (and others) is done by
-specifying the appropriate fold over the interface of the graph data
-type, eg:")
-    ,foldg-adjacency-intmap
+     (mono "Connect")
+     ". These operations satisfy additional axioms analogous to + and
+* (see the links below for proper details). ")
     (*paragraph*
-     "Of course, there is much more to alga. The above hopefully gives
-an idea of the library's algebra, the expression-oriented approach to
-construction of graphs, and the interface used for processing
-them. Alga also provides means for working with undirected graphs,
-relations, acyclic graphs, bipartite graphs, and so on."
+     (mono "Overlay g h")
+     " is the graph whose vertex and edge sets are the unions of "
+     (mono "g")
+     "'s and "
+     (mono "h")
+     "'s. "
+     (mono "Connect g h")
+     " is the graph whose vertex and edge sets contain those from
+overlay, as well as an edge from every vertex of "
+     (mono "g")
+     " to every vertex of "
+     (mono "h") ".")
+    (*subsection* "Construction as a DSL")
+    (*paragraph*
+     "The "
+     (mono "Graph")
+     " data type can be seen as a DSL for graph construction. In fact,
+it corresponds to an initial encoding of the language. Alga also
+supplies a final encoding with the type class "
+     (mono "ToGraph")
+     ". A type "
+     (mono "g")
+     " with a "
+     (mono "ToGraph")
+     " instance means that it can be converted to an algebraic graph
+expression by "
+     (mono "toGraph :: ToGraph g => g -> Graph (ToVertex g)")
+     ". These graph expressions are in turn \"interpreted\" by way of
+some fold over the "
+     (mono "Graph")
+     " ADT, "
+     (mono "foldg :: ToGraph g => r -> (ToVertex g -> r) -> (r -> r -> r) -> (r -> r -> r) -> g -> r")
+     ". ")
+    (*paragraph*
+     "This is powerful, because under this framework, algebraic
+graphs can marshalled between representations, offering the sharing of
+code between seemingly disparate types. In other words, the following
+is enough code to run the graph searches from above on any "
+     (mono "ToGraph g")
+     " type: ")
+    ,foldg-tograph
+    (*subsection* "More Information")
+    (*paragraph*
+     "Naturally, there is much more to alga. The above hopefully gives
+an idea of the library's algebra, the language-oriented approach to
+graphs, and the interface used for processing them. Alga also provides
+means for working with undirected graphs, relations, acyclic graphs,
+bipartite graphs, and so on."
      " For more detailed information about alga, its design, and its
 laws, I'd suggest checking out any of the following: "
      " a series of "
@@ -376,18 +417,18 @@ represent impossible state. "
      (mono "NonEmpty")
      " it is!")
     (*subsection* "Implementation")
-    "At long last, the meat of the implementation:"
+    "At last, the meat of topSort:"
     ,top-sort-core
     (*paragraph*
-     "A topological sort is an ordering of the vertices by exit time
-during depth first search. So, to ensure the lexicographically
-smallest ordering, we procrastinate exploring smaller vertices as long
-as possible. "
+     "A topological ordering can be computed by sorting the vertices
+by exit time during depth first search. So, to ensure the
+lexicographically smallest ordering, we procrastinate exploring
+smaller vertices as long as possible. "
      "The graphs "
      (mono "vertices")
      " are considered in descending order and "
      (mono "adjacent v")
-     " is specified as "
+     " is defined as "
      (mono "toDescList . flip postIntSet g"))
     (*paragraph*
      "I find it satisfying that this implementation comes close (in my
@@ -416,8 +457,7 @@ book. There, top sort is specified as:"
       (item
        "Return the linked list"
        (*break*)
-       "("(mono "Right <$> gets order") ")."))
-     )))
+       "("(mono "Right <$> gets order") ").")))))
 
 (define alga-dfs-post
   `(html
@@ -429,9 +469,9 @@ book. There, top sort is specified as:"
     (body
      (*post-title* "Expressing graph searches in haskell")
      ,@preamble
-     ;;     ,@background
      ,@depth-first-section
-     ,@topological-section)))
+     ,@topological-section
+     ,@background)))
 
 (define (render)
   (render-page alga-dfs-post "dfs-alga.html"))

@@ -2,7 +2,7 @@ pages ::= \
 	index \
 	dfs-alga
 
-%.html : %.ss style-sheet.ss
+%.html : %.ss style-sheet.ss 
 	echo "(time (render))" | scheme -q $<
 
 all:
@@ -11,5 +11,6 @@ all:
 clean:
 	rm *.html
 	rm *~
+	rm css/*~
 
 # .PHONY: all

@@ -1,3 +1,8 @@
 
-body { line-height: 1.2em; }
+
+body {
+    line-height: 1.2em;
+    padding: 1% 9% 0% 9%;
+}
+
 pre { line-height: 1.05em;}

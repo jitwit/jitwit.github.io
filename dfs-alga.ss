@@ -63,6 +63,11 @@ dfsForestFrom' vs g = evalState (explore vs) IntSet.empty where
                     when new $ modify' (IntSet.insert v)
                     return new"))
 
+(define topo-state-type
+  '(*haskell* "dfs :: (MonadState S m, MonadCont m) => Int -> m ()"))
+(define dfs-state-type
+  '(*haskell* "explore :: State IntSet (Forest Int)"))
+
 (define top-sort-state
   '(*haskell* "
 data NodeState = Entered | Exited
@@ -125,18 +130,35 @@ fromAdjacencyMap (AM.AM m) = GraphKL
   `((*paragraph*
      "Recently, I helped contribute to "
      (*link* "alga" ,snowleopard/alga)
-     ", a cool haskell library for working with graphs developed by
-Andrey Mokhov. My first contribution implemented breadth first
+     ", a very cool haskell library for working with graphs developed
+by Andrey Mokhov. My first contribution implemented breadth first
 search. The second took ideas from the first to improve the existing
 implementations of depth first search and topological sort. This post
-describes the implementations and demonstrates how haskell lends
-itself well to the expression of these classic algorithms.")))
+describes the implementations and illustrates how haskell lends itself
+well to the expression of these classic algorithms.")
+    (*paragraph*
+     "The first few sections dive in to the
+implementations. Background information about alga will follow
+containing pointers to better introductions. The final section
+discusses the previous implementations and includes benchmarks.")
+    (*paragraph*
+     "For now it suffices to know that one of the main representations
+alga uses for directed graphs is adjacency maps using data structures
+from the containers package, "
+     (mono "Map a (Set a)")
+     " for graphs with vertices that have "
+     (mono "Ord a")
+     " instances or "
+     (mono "IntMap IntSet")
+     " for ones with "
+     (mono "Int")
+     " vertices. These are the representations the implementations are concerned with.")))
 
 (define background
   `((*section* "Background")
     (*subsection* "alga")
     (*paragraph*
-     "With alga, graphs are constructed using a handful of building
+     "Using alga, graphs are constructed using a handful of building
 blocks--from empty graphs, vertices, overlays, and
 connections. Overlays union the vertex and edge sets of
 graphs. Connections do the same, but include edges from each vertex of
@@ -168,8 +190,8 @@ laws, I'd suggest checking out any of the following: "
      (*link* "blog posts" ,blog-post-link) ", "
      (*link* "this talk" ,video-link) ", "
      (*link* "this paper" ,algebraic-graphs-with-class) " or the "
-     (*link* "documentation" ,algebraic-graphs) "."
-     )
+     (*link* "documentation" ,algebraic-graphs)
+     ".")
     (*subsection* "Previously")
     (*paragraph*
      "There is a lot of power that comes from the above design. For any data type "
@@ -203,66 +225,81 @@ would it be better to avoid conversion by operating on adjacency maps directly?"
 
 (define depth-first-section
   `((*section* "Depth First Search")
-    "Here is the new implementation in its entirety:"
-    ,dfsnippet
-    "The goal is to compute a search "
-    (mono "Forest")
-    " from the input vertices. It is necessary to track which vertices
-have already been visited and nothing more. So, an "
-    (mono "IntSet")
-    " suffices, where membership of a vertex indicates that it's tree
-has been explored. Here is a bottom-up explanation of the implementation:"
-    (enum (item
-	   (mono "adjacent v")
-	   " exists because it's more pleasant to read than "
-	   (mono "IntSet.toList (postIntSet v g)")
-	   ".")
-	  (item
-	   (mono "discovered v")
-	   " reports if the vertex has been discovered and marks it as
-such when new.")
-	  (item
-	   (mono "walk v")
-	   " includes the tree from "
-	   (mono "v")
-	   " in the forest by exploring "
-	   (mono "v")
-	   "'s neighbors.")
-	  (item
-	   (mono "explore vs")
-	   " builds a forest from all unprocessed vertices in "
-	   (mono "vs")
-	   ".")
-	  (item
-	   (mono "evalState (explore vs) IntSet.empty")
-	   " computes the forest from "
-	   (mono "vs")
-	   ". The venerable state monad is used to thread the set of
+    (*paragraph*
+     "Depth first search is the simplest of the
+implementations. Algorithmically, it's not very different from breadth
+first search, but is expressed more readily in haskell due to the
+first class status of linked lists and the representation of forests
+as free lists. ")
+    (*paragraph*
+     "Here is the whole implementation (currently) found in alga:"
+     ,dfsnippet)
+    (*paragraph*
+     "A depth first search forest is produced given a list of vertices
+to search. Two mutually recursive functions drive the computation, "
+     (mono "explore")
+     " which checks that the next vertex is unexplored and if so passes it to "
+     (mono "walk")
+     ". "
+     (mono "walk")
+     " builds a tree from its argument, passing neighboring vertices back to "
+     (mono "explore.")
+     " To this end, the necessary state is keeping track of which
+vertices have been visited, nothing else. A bottom-up description:"
+     (enum (item
+	    (mono "adjacent v")
+	    " exists because it's more pleasant to read than "
+	    (mono "IntSet.toList (postIntSet v g)")
+	    ".")
+	   (item
+	    (mono "discovered v")
+	    " reports if the vertex has been discovered and marks it as
+such if not.")
+	   (item
+	    (mono "walk v")
+	    " includes the tree from "
+	    (mono "v")
+	    " in the forest by exploring "
+	    (mono "v")
+	    "'s neighbors.")
+	   (item
+	    (mono "explore vs")
+	    " builds a forest from all undiscovered vertices in "
+	    (mono "vs")
+	    ".")
+	   (item
+	    (mono "evalState (explore vs) IntSet.empty")
+	    " computes the forest from "
+	    (mono "vs")
+	    ". The venerable state monad is used to thread the set of
 discovered vertices through the computation, driven by the mutually
 recursive "
-	   (mono "walk")
-	   " and "
-	   (mono "expore")
-	   "."))
-    (mono "dfsForestFrom\'")
-    " has the tick \'"
-    " because it is a function internal to the module. The following
-three functions are exported, matching the original API from "
-    (mono "Data.Graph") ":"
-    ,dfs-api
-    ))
+	    (mono "walk")
+	    " and "
+	    (mono "expore")
+	    ".")))
+    (*paragraph*
+     (mono "dfsForestFrom\'")
+     " has the tick "
+     " because it is a function internal to the module. The following
+three functions are the ones actually exported, matching the original
+API from "
+     (mono "Data.Graph") ":"
+     ,dfs-api)))
 
 (define topological-section
   `((*section* "Topological Sort")
-    "The goals for implementing topological sort are loftier than
-those for dfs. Besides returning a valid topological ordering of the
-vertices, we want to produce the lexicographically smallest
-enumeration (addressing an old "
-    (*link* "issue" "https://github.com/snowleopard/alga/issues/2")
-    ") or produce a cycle if there is one. These increased demands are
+    (*paragraph*
+     "The goals for implementing topological sort are loftier than for
+dfs. Given a graph, we return either a valid topological ordering of
+the vertices or a cycle. If there the graph is acyclic, we want to
+produce the lexicographically smallest such ordering (addressing an
+old "
+     (*link* "issue" "https://github.com/snowleopard/alga/issues/2")
+     "). These increased demands are
 reflected in various ways in the implementation; more state is
 threaded, a hairier monad is requested, and the compactness of dfs is
-gone. All in all, it's more interesting."
+gone. All in all, it's more interesting.")
     (*subsection* "State")
     "In order to produce a cycle, we need to keep track of parent
 pointers, as well as if a vertex has been fully processed, or if its
@@ -270,20 +307,27 @@ descendents are currently being expanded. Also, root vertices don't
 have parents, so their state must be entered differently. The state
 representation used is then:"
     ,top-sort-state
-    (enum
-     "Brief remarks"
-     (item (mono "parent")
-	   " holds a table of parent pointers, "
-	   (mono "entry")
-	   " a table of node states, and "
-	   (mono "order")
-	   " the eventual topological ordering.")
-     (item "the parent table is not updated when entering root nodes,
-thus two different functions."))
+    "where "
+    (mono "parent")
+    " holds a table of parent pointers, "
+    (mono "entry")
+    " a table of node states, and "
+    (mono "order")
+    " the eventual topological ordering."
+    "the parent table is not updated when entering root nodes,
+thus two different functions."
     (*subsection* "Monad")
-    ""
-    
-
+    "The schemer in me was pleased to spot a decent opportunity to use "
+    (mono "callCC")
+    ". If a cycle is discovered, it allows the computation to
+terminate immediately and also avoids the wrapping/unwarpping of some
+part of the computation in "
+    (mono "Either")
+    " until the very end. What was a simple "
+    ,dfs-state-type
+    " has morphed into "
+    ,topo-state-type
+    (*subsection* "Implementation")
     ,top-sort-implementation))
 
 (define alga-dfs-post
@@ -296,7 +340,7 @@ thus two different functions."))
     (body
      (*post-title* "Expressing graph searches in haskell")
      ,@preamble
-     ,@background
+     ;;     ,@background
      ,@depth-first-section
      ,@topological-section)))
 
@@ -304,4 +348,5 @@ thus two different functions."))
   (render-page alga-dfs-post "dfs-alga.html"))
 
 (render)
+
 

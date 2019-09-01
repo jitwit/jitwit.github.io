@@ -223,10 +223,10 @@ some fold over the "
      (mono "foldg :: ToGraph g => r -> (ToVertex g -> r) -> (r -> r -> r) -> (r -> r -> r) -> g -> r")
      ". ")
     (*paragraph*
-     "This is powerful, because under this framework, algebraic
-graphs can marshalled between representations, offering the sharing of
-code between seemingly disparate types. In other words, the following
-is enough code to run the graph searches from above on any "
+     "This is powerful, because under this framework, algebraic graphs
+can marshalled between representations, offering code sharing between
+seemingly disparate types. In other words, the following is enough to
+run the graph searches from above on any "
      (mono "ToGraph g")
      " type: ")
     ,foldg-tograph
@@ -355,71 +355,8 @@ implementation; more state is threaded, a hairier monad is requested,
 and the compactness of dfs is gone. It's less concise, but more
 interesting. Unlike the dfs implementaiton, I'll split up the
 presentation for clarity.")
-    (*subsection* "State")
-    (*paragraph*
-     "The information here is uninteresting, but included for
-thoroughness. Here are internal search state types:"
-     ,top-sort-types
-     "The state is represented as a record with three parts: parent
-pointers stored in an "
-     (mono "IntMap Int")
-     ", node states as "
-     (mono "Entered")
-     " or "
-     (mono "Exited")
-     ", and a list of vertices ordered by exit time (the eventual
-topological ordering). The interface to this state includes:"
-     (enum
-      (item
-       (mono "nodeState")
-       " to query if a node is unvisited, being processed, or exited.")
-      (item
-       (mono "enter")
-       " is called when visiting a vertex. The parent vertex and the
-node state are updated.")
-      (item
-       (mono "enterRoot")
-       " to explore a new component of the search tree. There is no
-parent to enter, only the entry table is updated.")
-      (item
-       (mono "exit")
-       " called when the given vertex's descendents have been processed."))
-     ,top-sort-state
-     "Vertices are visited once and exited once. An error is thrown when
-this isn't the case (never).")
-    (*subsection* "Monad")
-    (*paragraph*
-     "The search is characterized by working over state held in a record of type "
-     (mono "S")
-     " and by the ability to report a cycle. Whereas the dfs
-implementation worked over "
-     (mono "State IntSet a")
-     " the monad here is "
-     (mono "(MonadState S m, MonadCont m) => m a")
-     ".")
-    (*paragraph*
-     "The schemer in me was pleased to spot a decent opportunity for "
-     (mono "callCC")
-     ". If a cycle is discovered, it allows the computation to
-terminate immediately and it also avoids the wrapping/unwarpping of
-some part of the computation in "
-     (mono "Either")
-     " until the very end.")
-    (*subsection* "Cycles")
-    (*paragraph*
-     "The cycle construction function is called when a back-edge is
-encountered during the sort. It cons's parents to the cycle until the
-ancestor that was Entered but not Exited is reached."
-     ,top-sort-cycle
-     "The remarkable aspect is the type of cycles, which was informed
-by pesky compiler warnings and advice from Andrey Mokhov about how to
-best get rid of them. He suggested way to avoid incomplete pattern
-warnings was to find a better data structure--one that couldn't
-represent impossible state. "
-     (mono "NonEmpty")
-     " it is!")
+    
     (*subsection* "Implementation")
-    "At last, the meat of topSort:"
     ,top-sort-core
     (*paragraph*
      "A topological ordering can be computed by sorting the vertices
@@ -459,12 +396,75 @@ book. There, top sort is specified as:"
       (item
        "Return the linked list"
        (*break*)
-       "("(mono "Right <$> gets order") ").")))))
+       "("(mono "Right <$> gets order") ").")))
+
+    (*subsection* "Monad")
+    (*paragraph*
+     "The search is characterized by working over state held in a record of type "
+     (mono "S")
+     " and by the ability to report a cycle. Whereas the dfs
+implementation worked over "
+     (mono "State IntSet a")
+     " the monad here is "
+     (mono "(MonadState S m, MonadCont m) => m a")
+     ".")
+    (*paragraph*
+     "The schemer in me was pleased to spot a decent opportunity for "
+     (mono "callCC")
+     ". If a cycle is discovered, it allows the computation to
+terminate immediately and it also avoids the wrapping/unwarpping of
+some part of the computation in "
+     (mono "Either")
+     " until the very end.")
+    (*subsection* "Cycles")
+    (*paragraph*
+     "The cycle construction function is called when a back-edge is
+encountered during the sort. It cons's parents to the cycle until the
+ancestor that was Entered but not Exited is reached."
+     ,top-sort-cycle
+     "The remarkable aspect is the type of cycles, which was informed
+by pesky compiler warnings and advice from Andrey Mokhov about how to
+best get rid of them. He suggested way to avoid incomplete pattern
+warnings was to find a better data structure--one that couldn't
+represent impossible state. "
+     (mono "NonEmpty")
+     " it is!")
+    (*subsection* "State")
+    (*paragraph*
+     "The information here is uninteresting, but included for
+thoroughness. Here are internal search state types:"
+     ,top-sort-types
+     "The state is represented as a record with three parts: parent
+pointers stored in an "
+     (mono "IntMap Int")
+     ", node states as "
+     (mono "Entered")
+     " or "
+     (mono "Exited")
+     ", and a list of vertices ordered by exit time (the eventual
+topological ordering). The interface to this state includes:"
+     (enum
+      (item
+       (mono "nodeState")
+       " to query if a node is unvisited, being processed, or exited.")
+      (item
+       (mono "enter")
+       " is called when visiting a vertex. The parent vertex and the
+node state are updated.")
+      (item
+       (mono "enterRoot")
+       " to explore a new component of the search tree. There is no
+parent to enter, only the entry table is updated.")
+      (item
+       (mono "exit")
+       " called when the given vertex's descendents have been processed."))
+     ,top-sort-state
+     "Vertices are visited once and exited once. An error is thrown when
+this isn't the case (never).")))
 
 (define benchmarks
   `((*section* "Benchmarks")
-    "coming soon")
-  )
+    (*criterion-reports* "~/code/alga-bench")))
 
 (define alga-dfs-post
   `(html
@@ -479,11 +479,10 @@ book. There, top sort is specified as:"
      ,@depth-first-section
      ,@topological-section
      ,@background
-     ,@benchmarks)))
+     ,@benchmarks)
+    (*footer*)))
 
 (define (render)
   (render-page alga-dfs-post "dfs-alga.html"))
-
-
 
 (render)

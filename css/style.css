@@ -5,4 +5,11 @@ body {
     padding: 3% 9% 3% 9%;
 }
 
-pre { line-height: 1.05em;}
+pre { 
+    line-height: 1.05em;
+}
+
+footer {
+    font-size: small;
+    padding-top: 3%;
+}

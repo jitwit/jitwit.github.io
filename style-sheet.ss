@@ -1,5 +1,16 @@
 (import (chez sxml-mini))
 
+(define (include-criterion project-dir)
+  (let ((reports (filter (lambda (file)
+			   (string=? (path-extension file) "html"))
+			 (directory-list project-dir))))
+    (map (lambda (report)
+	   (system (format "cp ~a ~a"
+			   (format "~a/~a" project-dir report)
+			   (format "~a" report)))
+	   report)
+	 reports)))
+
 (define (colorize-haskell haskell-string)
   (let* ((tmp (format "/tmp/~a"
   		      (gensym->unique-string (gensym))))
@@ -46,9 +57,23 @@
 		       `(h3 ,title)))
     (*paragraph* . ,(lambda (_ . nodes)
 		      `(p (section ,@nodes))))
+    (*criterion-reports* . ,(lambda (_ project)
+			      `(ul "criterion reports"
+				   ,(map (lambda (report)
+					   `(li (a (@ (href ,report))
+						   ,(path-root report))))
+					 (include-criterion project)))))
     (*link* . ,(lambda (_ link href)
 		 `(a (@ (href ,href))
 		     ,link)))
+    (*footer* . ,(lambda x
+		   (let* ((now (current-date))
+			  (build (format "updated: ~a/~a/~a"
+					 (date-day now)
+					 (date-month now)
+					 (date-year now))))
+		     `(footer
+		       ,build))))
     (*default* . ,(lambda x x))
     (*text* . ,(lambda (tag str) str))))
 

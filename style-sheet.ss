@@ -1,15 +1,17 @@
 (import (chez sxml-mini))
 
+;; todo make reports for csv results  
 (define (include-criterion project-dir)
   (let ((reports (filter (lambda (file)
 			   (string=? (path-extension file) "html"))
 			 (directory-list project-dir))))
-    (map (lambda (report)
-	   (system (format "cp ~a ~a"
-			   (format "~a/~a" project-dir report)
-			   (format "~a" report)))
-	   report)
-	 reports)))
+    (for-each (lambda (report)
+		(system
+		  (format "cp ~a ~a"
+			  (format "~a/~a" project-dir report)
+			  (format "criterion/~a" report))))
+	      reports)
+    reports))
 
 (define (colorize-haskell haskell-string)
   (let* ((tmp (format "/tmp/~a"
@@ -58,9 +60,8 @@
     (*paragraph* . ,(lambda (_ . nodes)
 		      `(p (section ,@nodes))))
     (*criterion-reports* . ,(lambda (_ project)
-			      `(ul "criterion reports"
-				   ,(map (lambda (report)
-					   `(li (a (@ (href ,report))
+			      `(ul ,(map (lambda (report)
+					   `(li (a (@ (href ,(format "criterion/~a" report)))
 						   ,(path-root report))))
 					 (include-criterion project)))))
     (*link* . ,(lambda (_ link href)

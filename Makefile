@@ -11,7 +11,7 @@ all:
 	make $(pages:=.html)
 
 clean:
-	rm *.html
+	rm $(pages:=.html)
 	rm *~
 	rm css/*~
 

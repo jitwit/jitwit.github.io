@@ -12,6 +12,45 @@
   "https://eprint.ncl.ac.uk/file_store/production/239461/EF82F5FE-66E3-4F64-A1AC-A366D1961738.pdf")
 (define containers "http://hackage.haskell.org/package/containers")
 
+(define real-world-graphs-summary
+  (let ((data '((n4 26703 1628)
+		(n2 404 87)
+		(n5 57949 3487)
+		(n3 3228 349)
+		(nodes10000 100000 10000)
+		(n1 21 15)
+		(nodes7000 70000 7000)
+		(nodes8000 80000 8000)
+		(nodes4000 40000 4000))))
+    `(table '(tr (th (b (mono "G"))) (th (b (mono "|E|"))) (th (b (mono "|V|"))))
+	    ,@(map (lambda (row)
+		     `(tr ,@(map (lambda (r)
+				   `(td ,(if (number? r)
+					     (number->string r)
+					     (symbol->string r))))
+				 row)))
+		   data))))
+
+(define criterion-tables
+  (let* ((data (with-input-from-file "~/code/alga-bench/alga-bench.ss" read))
+	 (benches (map car data))
+	 (points (map cdr data))
+	 (libs '("new-alga" "old-alga" "kl" "fgl")))
+    `(table (tr ,@(map (lambda (lib)
+			 `(th ,lib))
+		       (cons "bench" libs)))
+	    ,@(map (lambda (bench point)
+		     `(tr (td ,(substring bench 0 (- (string-length bench) 6)))
+			  ,@(map (lambda (lib)
+				   (cond ((assoc lib point)
+					  => (lambda (res)
+					       `(td ,(format "~,2f" (cdr res)))))
+					 (else `(td "n/a"))))
+				 libs)
+			  ))
+		   benches
+		   points))))
+
 ;;; code snippets 
 (define core-data-type
   '(*haskell*
@@ -148,7 +187,7 @@ implementations of depth first search and topological sort.")
      "This post describes the implementations and illustrates how
 these classic algorithms may be expressed in haskell. Background
 information about alga will follow. Finally, there will be evidence
-that the implementations actually work in the form of criterion
+that the implementations are effective in the form of criterion
 benchmarks. For now it suffices to know that the main representation
 alga uses for directed graphs is adjacency maps in the form of "
      (mono "Map a (Set a)")
@@ -163,8 +202,7 @@ suggest checking out any of the following: "
      (*link* "this talk" ,video-link) ", "
      (*link* "this paper" ,algebraic-graphs-with-class) " or the "
      (*link* "documentation" ,algebraic-graphs)
-     ".")
-    ))
+     ".")))
 
 (define background
   `((*section* "Alga Background")
@@ -268,8 +306,7 @@ since it works on memory-compact adjacency maps represented as "
      (mono "Array Int [Int]")
      " and is a mature module. Unfortunately, the array-based
 representation does not play well with alga's algebraic graphs, so
-it's not clear how reduce the number of conversions. Besides,
-Data.Graph has no support for breadth first search.")))
+it's not clear how reduce the number of conversions.")))
 
 (define depth-first-section
   `((*section* "Depth First Search")
@@ -434,19 +471,44 @@ this isn't the case (never).")))
     "Here are links to various benchmarks done with criterion:"
     (*criterion-reports* "~/code/alga-bench")
     (*paragraph*
-     "The benchmarks are run after construction, to focus on measuring
-queries. fgl and containers don't seem to have easy support for
+     "Benchmarks are run after construction, to focus on query
+performance. fgl and containers don't seem to have easy support for
 working with graphs whose vertices are not type Int, so most of the
-benchmarks compare them against alga's AdjacencyIntMaps. There are
-benches comparing the new and old alga implementations for
-AdjacencyMaps as well. Many of the graphs are taken from "
-     (*link* "haskell-perf/graphs" "https://github.com/haskell-perf/graphs")
-     ". The words graph is Knuth's graph formed by 5 letter english
-words, where two words are connected if they differ by one
-character.")
+benchmarks compare them against alga's AdjacencyIntMaps. Many of the
+graphs are borrowed from "
+     (*link* "haskell-perf/graphs." "https://github.com/haskell-perf/graphs"))
+    (*paragraph*
+     "Graphs sizes from the haskell-perf repository:"
+     ,real-world-graphs-summary)
     (*paragraph*
      "The source code for the benchmarks can be viewed at "
-     (*link* "report.hs" "https://github.com/jitwit/bench-alga/blob/master/report.hs"))))
+     (*link* "report.hs" "https://github.com/jitwit/bench-alga/blob/master/report.hs")
+     )
+    (*paragraph*
+     "This is a table containing the average relative normalized
+performance of the various libraries using the haskell-perf graphs."
+     ,criterion-tables
+     (*break*)
+     "There are two benchmarks for topological sort,
+since the graphs have cycles. At first blush, it's nonsensical to
+compare implementations since the new one short circuits once it finds
+a cycle. On the other hand, the old alga implementation would first
+run "
+     (mono "topSort")
+     " from Data.Graph and subsequently "
+     (mono "guard $ isTopSortOf result")
+     ". Thus, the ~6500 fold improvement over the old implementation
+is a semi-legitimate comparison on directed cyclic graphs. On DAGs,
+the improvement is ~3 fold. "
+     "The graphs are made acyclic by removing self-loops and reversing
+edges so that "
+     (mono "(x,y) -> (min x y, max x y)")
+     ". The vertices are then permuted since our topSort
+implementation considers them in sorted order (otherwise "
+     (mono "(min x y, max x y)")
+     " gets best-case performance while"
+     (mono "(max x y, min x y)")
+     " worst-case. Best to permute).")))
 
 (define alga-dfs-post
   `(html
@@ -467,5 +529,4 @@ character.")
 (define (render)
   (render-page alga-dfs-post "dfs-alga.html"))
 
-;;(render)
 

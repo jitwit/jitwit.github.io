@@ -13,3 +13,13 @@ footer {
     font-size: small;
     padding-top: 3%;
 }
+
+th {
+    padding: 3%;
+}
+
+table {
+    text-align: left;
+    padding: 2%;
+    border-style: solid;
+}

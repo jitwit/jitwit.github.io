@@ -8,7 +8,7 @@
      (title "jitwit"))
     (body
      (*section* "Posts")
-     (*link* "Expressing graph searches in haskell" "dfs-alga.html"))
+     (*link* "Graph searches in alga" "dfs-alga.html"))
     (*footer*)))
 
 (define (render)

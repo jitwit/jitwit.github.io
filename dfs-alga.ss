@@ -143,26 +143,28 @@ fromAdjacencyMap (AM.AM m) = GraphKL
      ", a very cool haskell library for working with graphs developed
 by Andrey Mokhov. My first contribution implemented breadth first
 search. The second took ideas from the first to improve the existing
-implementations of depth first search and topological sort. This post
-describes the implementations and illustrates how haskell lends itself
-well to the expression of these classic algorithms.")
+implementations of depth first search and topological sort.")
     (*paragraph*
-     "The first few sections dive in to the
-implementations. Background information about alga will follow
-containing pointers to better introductions. The final section
-discusses the previous implementations and includes benchmarks.")
-    (*paragraph*
-     "For now it suffices to know that one of the main representations
-alga uses for directed graphs is adjacency maps using data structures
-from the containers package, "
+     "This post describes the implementations and illustrates how
+these classic algorithms may be expressed in haskell. Background
+information about alga will follow. Finally, there will be evidence
+that the implementations actually work in the form of criterion
+benchmarks. For now it suffices to know that the main representation
+alga uses for directed graphs is adjacency maps in the form of "
      (mono "Map a (Set a)")
-     " for graphs with vertices that have "
-     (mono "Ord a")
-     " instances or "
+     " or "
      (mono "IntMap IntSet")
-     " for ones with "
-     (mono "Int")
-     " vertices. These are the representations the implementations are concerned with.")))
+     ".")
+    (*paragraph*
+     "For more information about alga, its design, and its laws, I'd
+suggest checking out any of the following: "
+     " a series of "
+     (*link* "blog posts" ,blog-post-link) ", "
+     (*link* "this talk" ,video-link) ", "
+     (*link* "this paper" ,algebraic-graphs-with-class) " or the "
+     (*link* "documentation" ,algebraic-graphs)
+     ".")
+    ))
 
 (define background
   `((*section* "Alga Background")
@@ -184,9 +186,11 @@ graphs, "
      (mono "Overlay")
      " and "
      (mono "Connect")
-     ". These operations satisfy additional axioms analogous to + and
-* (see the links below for proper details). ")
-    (*paragraph*
+     ". These operations satisfy additional axioms analogous to "
+     (mono "+")
+     " and "
+     (mono "*")
+     ". "
      (mono "Overlay g h")
      " is the graph whose vertex and edge sets are the unions of "
      (mono "g")
@@ -198,94 +202,85 @@ graphs, "
 overlay, as well as an edge from every vertex of "
      (mono "g")
      " to every vertex of "
-     (mono "h") ".")
+     (mono "h")
+     ". This can be seen explicitly in the case of adjacency maps in
+the next section.")
     (*subsection* "Construction as a DSL")
     (*paragraph*
      "The "
      (mono "Graph")
-     " data type can be seen as a DSL for graph construction. In fact,
-it corresponds to an initial encoding of the language. Alga also
-supplies a final encoding with the type class "
+     " data type can be seen as a DSL for graph construction. It
+corresponds to an initial encoding of the language. Alga also defines
+a final encoding with the type class "
      (mono "Graph g")
      ", which requires analogues for the type constructors of the data
-type specified as functions "
+type as functions "
      (mono "empty, vertex, overlay, connect")
-     " for membership. There is also a type class "
+     " for membership.")
+    (*paragraph*
+     "The type class "
      (mono "ToGraph")
-     " for types that can be converted to the "
+     " is for types that can be embedded in the "
      (mono "Graph")
-     " ADT by way of "
+     " ADT by way of a function "
      (mono "toGraph :: ToGraph g => g -> Graph (ToVertex g)")
-     ". These graph expressions are in turn \"interpreted\" by way of
-some fold over the "
+     ". These graph expressions may in turn be \"interpreted\" in fold
+over the "
      (mono "Graph")
-     " ADT, "
+     " encoding, "
      (mono "foldg :: ToGraph g => r -> (ToVertex g -> r) -> (r -> r -> r) -> (r -> r -> r) -> g -> r")
      ". ")
     (*paragraph*
-     "This is powerful, because under this framework, algebraic graphs
-can marshalled between representations, offering code sharing between
-seemingly disparate types. In other words, the following is enough to
-run the graph searches from above on any "
+     "Working with "
+     (mono "ToGraph")
+     " is powerful, since algebraic graphs can converted between
+representations, allowing code sharing between possibly disparate
+types. In other words, the following is enough to run the graph
+searches from above on any "
      (mono "ToGraph g")
      " type: ")
     ,foldg-tograph
     (*subsection* "More Information")
     (*paragraph*
-     "Naturally, there is much more to alga. The above hopefully gives
-an idea of the library's algebra, the language-oriented approach to
-graphs, and the interface used for processing them. Alga also provides
+     "There is much more to alga. The above hopefully gives an idea of
+the library's algebra and its approach to graphs. Alga also provides
 means for working with undirected graphs, relations, acyclic graphs,
-bipartite graphs, and so on."
-     " For more detailed information about alga, its design, and its
-laws, I'd suggest checking out any of the following: "
-     " a series of "
-     (*link* "blog posts" ,blog-post-link) ", "
-     (*link* "this talk" ,video-link) ", "
-     (*link* "this paper" ,algebraic-graphs-with-class) " or the "
-     (*link* "documentation" ,algebraic-graphs)
-     ".")
+bipartite graphs, and so on.")    
     (*subsection* "Previously")
     (*paragraph*
-     ("Given a type with a ")
+     ("The previous implementations in fact used ")
      (mono "ToGraph g")
-     " instance, we can use code from "
+     " to convert between representations to use the the "
      (*link* "Data.Graph" ,Data.Graph)
-     " simply by defining a conversion form AdjacencyMaps to the Graph type defined there.
-The glue to to do so: "
-     ,kl-snippet)
+     " module, given a conversion from adjacency maps to the "
+     (mono "Graph :: Array Int [Int]")
+     " representation:"
+     ,kl-snippet
+     " The pipeline went something like: "
+     (enum
+      (item (mono "toAdjacencyMap . toGraph :: g -> AdjacencyMap (ToVertex g)") )
+      (item (mono "fromAdjacencyMap :: AdjacencyMap (ToVertex g) -> GraphKL (ToVertex g)"))
+      (item (mono "map (fmap fromVertexKL) . Data.Graph.dff . toGraphKL :: Data.Graph -> Forest (ToVertex g)"))))
     (*paragraph*
      (mono "Data.Graph")
      " provides good performance for the functions it does export,
 since it works on memory-compact adjacency maps represented as "
      (mono "Array Int [Int]")
-     ". Unfortunately, the array-based representation does not play
-well with alga's algebraic graphs, so it's not possible to skip this
-conversion step. For arbitrary "
-     (mono "ToGraph g")
-     "'s the result is three passes converting representations: "
-     (enum
-      (item (mono "g") " -> " (mono "AdjacencyMap a"))
-      (item (mono "AdjacencyMap a") " -> " (mono "GraphKL a"))
-      (item (mono "Forest Int") " -> " (mono "Forest a")
-	    "  (in the case of " (mono "dfs") ")")))
-    "The above describes the previous approach to implementing dfs in
-alga. It's a testament to the flexibility offered by the DSL approach
-to library design. So, the new dfs implementation is basically a
-response to the question, would it be better to avoid conversion by
-operating on adjacency maps directly? The question is answered
-affirmatively, by benchmarking!"))
+     " and is a mature module. Unfortunately, the array-based
+representation does not play well with alga's algebraic graphs, so
+it's not clear how reduce the number of conversions. Besides,
+Data.Graph has no support for breadth first search.")))
 
 (define depth-first-section
   `((*section* "Depth First Search")
     (*paragraph*
      "Depth first search is the simplest of the
-implementations. Algorithmically, it's not very different from breadth
-first search, but is expressed more readily in haskell due to the
+implementations. Algorithmically, it's not too different from breadth
+first search, but it's expressed more readily in haskell due to the
 first class status of linked lists and the representation of forests
-as free lists. ")
+as free lists.")
     (*paragraph*
-     "Here is the whole implementation (currently) found in alga:"
+     "Here is the entire implementation (currently) found in alga:"
      ,dfsnippet)
     (*paragraph*
      "A depth first search forest is produced given a list of vertices
@@ -295,10 +290,11 @@ to search. Two mutually recursive functions drive the computation, "
      (mono "walk")
      ". "
      (mono "walk")
-     " builds a tree from its argument, passing neighboring vertices back to "
+     " builds a tree from its argument, passing the neighboring
+vertices back to "
      (mono "explore.")
-     " To this end, the necessary (and sufficient) state is keeping
-track of which vertices have been visited. A bottom-up description:"
+     " To this end, sufficient state is a set of vertices that have
+been visited. A bottom-up description:"
      (enum (item
 	    (mono "adjacent v")
 	    " exists because it's more pleasant to read than "
@@ -307,7 +303,9 @@ track of which vertices have been visited. A bottom-up description:"
 	   (item
 	    (mono "discovered v")
 	    " reports if the vertex has been discovered and marks it as
-such if not.")
+such if not. It would be nice if in haskell (like in scheme) we could write "
+	    (mono "discovered?")
+	    " instead.")
 	   (item
 	    (mono "walk v")
 	    " includes the tree from "
@@ -317,9 +315,8 @@ such if not.")
 	    "'s neighbors.")
 	   (item
 	    (mono "explore vs")
-	    " builds a forest from all undiscovered vertices in "
-	    (mono "vs")
-	    ".")
+	    " builds a forest from all undiscovered vertices in its
+argument list.")
 	   (item
 	    (mono "evalState (explore vs) IntSet.empty")
 	    " computes the forest from "
@@ -342,63 +339,28 @@ matching the original API from "
 (define topological-section
   `((*section* "Topological Sort")
     (*paragraph*
-     "The goals for implementing topological sort are more complex
-than for dfs. Given a directed graph, we return either a valid
-topological ordering of the vertices or a cycle. If there the graph is
-indeed acyclic, we want to produce the lexicographically smallest such
-ordering (addressing an old "
+     "Given a directed graph, we return a valid topological ordering
+of the vertices if it is acyclic, or we present a cycle otherwise. In
+the case that the graph is acyclic, we produce the lexicographically
+smallest such ordering (addressing an old "
      (*link* "issue" "https://github.com/snowleopard/alga/issues/2")
-     ").")
-    (*paragraph*
-     "These increased demands are reflected in various ways in the
-implementation; more state is threaded, a hairier monad is requested,
-and the compactness of dfs is gone. It's less concise, but more
-interesting. Unlike the dfs implementaiton, I'll split up the
-presentation for clarity.")
-    
+     "). The increased demands, relative to dfs, are reflected in
+various ways in the implementation; more state is threaded, a hairier
+monad is requested, and the compactness of dfs is gone. It's less
+concise, but more interesting.")
     (*subsection* "Implementation")
     ,top-sort-core
     (*paragraph*
      "A topological ordering can be computed by sorting the vertices
-by exit time during depth first search. So, to ensure the
-lexicographically smallest ordering, we procrastinate exploring
-smaller vertices as long as possible. "
-     "The graphs "
+by exit time during depth first search. To ensure the
+lexicographically smallest such ordering, we procrastinate exploring
+smaller vertices as long as possible: the "
      (mono "vertices")
      " are considered in descending order and "
      (mono "adjacent v")
-     " is defined as "
-     (mono "toDescList . flip postIntSet g"))
-    (*paragraph*
-     "I find it satisfying that this implementation comes close (in my
-mind at least) to the pseudocode from the classic CLSR algorithms
-book. There, top sort is specified as:"
-     (enum
-      (mono "Topological-sort(G):")
-      (item
-       "call "
-       (mono "DFS(G)")
-       " to compute finishing times for each vertex"
-       (*break*)
-       "(the for loop in DFS is exactly "
-       (mono "forM_ vertices dfsRoot")
-       " and "
-       (mono "DFS-VISIT(G,v)")
-       " corresponds to "
-       (mono "dfs")
-       " in the let clause).")
-      (item
-       "as each vertex is finished, insert in onto the front of a linked list"
-       (*break*)
-       "(precisely what "
-       (mono "exit")
-       " does).")
-      (item
-       "Return the linked list"
-       (*break*)
-       "("(mono "Right <$> gets order") ").")))
-
-    (*subsection* "Monad")
+     " is here defined as "
+     (mono "toDescList $ postIntSet v g")
+     ".")
     (*paragraph*
      "The search is characterized by working over state held in a record of type "
      (mono "S")
@@ -407,29 +369,26 @@ implementation worked over "
      (mono "State IntSet a")
      " the monad here is "
      (mono "(MonadState S m, MonadCont m) => m a")
-     ".")
-    (*paragraph*
-     "The schemer in me was pleased to spot a decent opportunity for "
+     ". The schemer in me was pleased to spot a decent opportunity for "
      (mono "callCC")
-     ". If a cycle is discovered, it allows the computation to
-terminate immediately and it also avoids the wrapping/unwarpping of
-some part of the computation in "
+     ". When a cycle is discovered, the computation terminates
+immediately and the wrapping/unwarpping of some part of the
+computation in "
      (mono "Either")
-     " until the very end.")
-    (*subsection* "Cycles")
+     " is postponed until the very end.")
     (*paragraph*
-     "The cycle construction function is called when a back-edge is
+     "The cycle reconstruction function is called when a back-edge is
 encountered during the sort. It cons's parents to the cycle until the
-ancestor that was Entered but not Exited is reached."
+ancestor that was Entered but not Exited is reached: "
      ,top-sort-cycle
-     "The remarkable aspect is the type of cycles, which was informed
-by pesky compiler warnings and advice from Andrey Mokhov about how to
-best get rid of them. He suggested way to avoid incomplete pattern
-warnings was to find a better data structure--one that couldn't
-represent impossible state. "
+     "The only notable aspect is the type for cycles, which was
+informed by pesky compiler warnings and advice from Andrey Mokhov
+about how to best get rid of them. He suggested way to avoid
+incomplete pattern warnings was to find a better data structure--one
+that couldn't represent impossible state. "
      (mono "NonEmpty")
      " it is!")
-    (*subsection* "State")
+    (*subsection* "Other Details")
     (*paragraph*
      "The information here is uninteresting, but included for
 thoroughness. Here are internal search state types:"
@@ -446,7 +405,15 @@ topological ordering). The interface to this state includes:"
      (enum
       (item
        (mono "nodeState")
-       " to query if a node is unvisited, being processed, or exited.")
+       " to query if a node is unvisited, being processed, or
+exited. The result of the query can be "
+       (mono "Nothing")
+       ", "
+       (mono "Just Entered")
+       ", or "
+       (mono "Just Exited")
+       " corresponding to the colors White, Gray, and Black in classic
+algorithms books.")
       (item
        (mono "enter")
        " is called when visiting a vertex. The parent vertex and the
@@ -489,7 +456,7 @@ character.")
      (meta (@ (charset "UTF-8")))
      (title "DFS Alga"))
     (body
-     (*post-title* "Expressing graph searches in haskell")
+     (*post-title* "Graph searches in alga")
      ,@preamble
      ,@depth-first-section
      ,@topological-section

@@ -160,12 +160,11 @@ alga. It's a testament to the flexibility offered by the DSL approach
 to library design. So, the new dfs implementation is basically a
 response to the question, would it be better to avoid conversion by
 operating on adjacency maps directly? The question is answered
-affirmatively, by benchmarking!<h2>Benchmarks</h2>Here are links to various benchmarks done with criterion:<ul><li><a href='criterion/words-graph.html'>words-graph</a></li><li><a href='criterion/misc-graphs.html'>misc-graphs</a></li></ul><p><section>The benchmarks are run after construction, to focus on measuring
+affirmatively, by benchmarking!<h2>Benchmarks</h2>Here are links to various benchmarks done with criterion:<ul><li><a href='criterion/depth-first-bench.html'>depth-first-bench</a></li><li><a href='criterion/topological-bench.html'>topological-bench</a></li><li><a href='criterion/words-graph.html'>words-graph</a></li><li><a href='criterion/breadth-first-bench.html'>breadth-first-bench</a></li><li><a href='criterion/misc-graphs.html'>misc-graphs</a></li><li><a href='criterion/dag-topological-bench.html'>dag-topological-bench</a></li></ul><p><section>The benchmarks are run after construction, to focus on measuring
 queries. fgl and containers don't seem to have easy support for
 working with graphs whose vertices are not type Int, so most of the
 benchmarks compare them against alga's AdjacencyIntMaps. There are
 benches comparing the new and old alga implementations for
-AdjacencyMaps as well. The so called 'real world' graph in misc-graphs
-is the largest one taken from <a href='https://github.com/haskell-perf/graphs'>haskell-perf/graphs</a>. The words graph is Knuth's graph formed by 5 letter english
+AdjacencyMaps as well. Many of the graphs are taken from <a href='https://github.com/haskell-perf/graphs'>haskell-perf/graphs</a>. The words graph is Knuth's graph formed by 5 letter english
 words, where two words are connected if they differ by one
 character.</section></p><p><section>The source code for the benchmarks can be viewed at <a href='https://github.com/jitwit/bench-alga/blob/master/report.hs'>report.hs</a></section></p></body><footer>updated: 1/9/2019</footer></html>

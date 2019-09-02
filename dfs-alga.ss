@@ -472,8 +472,7 @@ queries. fgl and containers don't seem to have easy support for
 working with graphs whose vertices are not type Int, so most of the
 benchmarks compare them against alga's AdjacencyIntMaps. There are
 benches comparing the new and old alga implementations for
-AdjacencyMaps as well. The so called 'real world' graph in misc-graphs
-is the largest one taken from "
+AdjacencyMaps as well. Many of the graphs are taken from "
      (*link* "haskell-perf/graphs" "https://github.com/haskell-perf/graphs")
      ". The words graph is Knuth's graph formed by 5 letter english
 words, where two words are connected if they differ by one

@@ -59,6 +59,8 @@
 		       `(h3 ,title)))
     (*paragraph* . ,(lambda (_ . nodes)
 		      `(p (section ,@nodes))))
+    ;; fetch .html files assumed to be criterion reports from the
+    ;; given directory.
     (*criterion-reports* . ,(lambda (_ project)
 			      `(ul ,(map (lambda (report)
 					   `(li (a (@ (href ,(format "criterion/~a" report)))

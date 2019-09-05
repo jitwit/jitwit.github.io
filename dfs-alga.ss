@@ -179,9 +179,9 @@ fromAdjacencyMap (AM.AM m) = GraphKL
   `((*paragraph*
      "Recently, I helped contribute to "
      (*link* "alga" ,snowleopard/alga)
-     ", a very cool haskell library for working with graphs developed
-by Andrey Mokhov. My first contribution implemented breadth first
-search. The second took ideas from the first to improve the existing
+     ", a haskell library for working with graphs developed by Andrey
+Mokhov. My first contribution implemented breadth first search. The
+second took ideas from the first to improve the existing
 implementations of depth first search and topological sort.")
     (*paragraph*
      "This post describes the implementations and illustrates how
@@ -503,12 +503,8 @@ the improvement is ~3 fold. "
      "The graphs are made acyclic by removing self-loops and reversing
 edges so that "
      (mono "(x,y) -> (min x y, max x y)")
-     ". The vertices are then permuted since our topSort
-implementation considers them in sorted order (otherwise "
-     (mono "(min x y, max x y)")
-     " gets best-case performance while"
-     (mono "(max x y, min x y)")
-     " worst-case. Best to permute).")))
+     ". The vertices are then randomly permuted since the new topSort
+implementation considers them in sorted order.")))
 
 (define alga-dfs-post
   `(html

@@ -14,12 +14,28 @@ footer {
     padding-top: 3%;
 }
 
+caption {
+    padding-top: 4%;
+}
+
 th {
-    padding: 3%;
+    padding: 5px;
 }
 
 table {
     text-align: left;
-    padding: 2%;
+    padding: 1%;
     border-style: solid;
 }
+
+# haskell code highlighting
+.hs-keyword { color: sienna; }
+.hs-keyglyph { color: sienna; }
+.hs-layout { color: sienna; }
+.hs-comment { color: darkred; }
+.hs-conid { color: teal; } 
+.hs-conop { color: teal; } 
+.hs-definition { color: darkslateblue; }
+.hs-varid { color: darkslateblue; }
+.hs-varop { color: darkslateblue; }
+

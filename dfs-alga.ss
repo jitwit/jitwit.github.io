@@ -13,21 +13,28 @@
 (define containers "http://hackage.haskell.org/package/containers")
 
 (define real-world-graphs-summary
-  (let ((data '((n4 26703 1628)
+  (let ((data '((n1 21 15)
 		(n2 404 87)
-		(n5 57949 3487)
 		(n3 3228 349)
-		(nodes10000 100000 10000)
-		(n1 21 15)
+		(n4 26703 1628)
+		(n5 57949 3487)
+		(nodes4000 40000 4000)
 		(nodes7000 70000 7000)
 		(nodes8000 80000 8000)
-		(nodes4000 40000 4000))))
-    `(table '(tr (th (b (mono "G"))) (th (b (mono "|E|"))) (th (b (mono "|V|"))))
+		(nodes10000 100000 10000))))
+    `(table (caption "Sizes of the haskell-perf/graphs")
+	    '(tr (th (b (mono "G")))
+		 (th (@ (align "right"))
+		     (b (mono "|E|")))
+		 (th (@ (align "right"))
+		     (b (mono "|V|"))))
 	    ,@(map (lambda (row)
 		     `(tr ,@(map (lambda (r)
-				   `(td ,(if (number? r)
-					     (number->string r)
-					     (symbol->string r))))
+				   (if (number? r)
+				       `(td (@ (align "right"))
+					    ,(number->string r))
+				       `(td (@ (align "left"))
+					    ,(symbol->string r))))
 				 row)))
 		   data))))
 
@@ -36,18 +43,23 @@
 	 (benches (map car data))
 	 (points (map cdr data))
 	 (libs '("new-alga" "old-alga" "kl" "fgl")))
-    `(table (tr ,@(map (lambda (lib)
-			 `(th ,lib))
-		       (cons "bench" libs)))
+    `(table (caption "Average relative performance over haskell-perf graphs")
+	    (tr (th "")
+		,@(map (lambda (lib)
+			 `(th (@ (align "right"))
+			      ,lib))
+		       libs))
 	    ,@(map (lambda (bench point)
-		     `(tr (td ,(substring bench 0 (- (string-length bench) 6)))
+		     `(tr (td  (@ (align "left"))
+			       ,(substring bench 0 (- (string-length bench) 6)))
 			  ,@(map (lambda (lib)
 				   (cond ((assoc lib point)
 					  => (lambda (res)
-					       `(td ,(format "~,2f" (cdr res)))))
-					 (else `(td "n/a"))))
-				 libs)
-			  ))
+					       `(td (@ (align "right"))
+						    ,(format "~,2f" (cdr res)))))
+					 (else `(td (@ (align "right"))
+						    "n/a"))))
+				 libs)))
 		   benches
 		   points))))
 
@@ -420,7 +432,7 @@ ancestor that was Entered but not Exited is reached: "
      ,top-sort-cycle
      "The only notable aspect is the type for cycles, which was
 informed by pesky compiler warnings and advice from Andrey Mokhov
-about how to best get rid of them. He suggested way to avoid
+about how to best get rid of them. He suggested that the way to avoid
 incomplete pattern warnings was to find a better data structure--one
 that couldn't represent impossible state. "
      (mono "NonEmpty")
@@ -476,17 +488,10 @@ performance. fgl and containers don't seem to have easy support for
 working with graphs whose vertices are not type Int, so most of the
 benchmarks compare them against alga's AdjacencyIntMaps. Many of the
 graphs are borrowed from "
-     (*link* "haskell-perf/graphs." "https://github.com/haskell-perf/graphs"))
-    (*paragraph*
-     "Graphs sizes from the haskell-perf repository:"
+     (*link* "haskell-perf/graphs." "https://github.com/haskell-perf/graphs")
      ,real-world-graphs-summary)
+    
     (*paragraph*
-     "The source code for the benchmarks can be viewed at "
-     (*link* "report.hs" "https://github.com/jitwit/bench-alga/blob/master/report.hs")
-     )
-    (*paragraph*
-     "This is a table containing the average relative normalized
-performance of the various libraries using the haskell-perf graphs."
      ,criterion-tables
      (*break*)
      "There are two benchmarks for topological sort,
@@ -504,13 +509,16 @@ the improvement is ~3 fold. "
 edges so that "
      (mono "(x,y) -> (min x y, max x y)")
      ". The vertices are then randomly permuted since the new topSort
-implementation considers them in sorted order.")))
+implementation considers them in sorted order."
+     (*paragraph*
+      "The source code for the benchmarks can be viewed at "
+      (*link* "report.hs" "https://github.com/jitwit/bench-alga/blob/master/report.hs"))
+     )))
 
 (define alga-dfs-post
   `(html
     (head
      (*css*)
-     (*haskell-css*)
      (meta (@ (charset "UTF-8")))
      (title "DFS Alga"))
     (body

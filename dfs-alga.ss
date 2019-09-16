@@ -194,53 +194,31 @@ fromAdjacencyMap (AM.AM m) = GraphKL
      ", a haskell library for working with graphs developed by Andrey
 Mokhov. My first contribution implemented breadth first search. The
 second took ideas from the first to improve the existing
-implementations of depth first search and topological sort.")
-    (*paragraph*
-     "This post describes the implementations and illustrates how
-these classic algorithms may be expressed in haskell. Background
-information about alga will follow. Finally, there will be evidence
+implementations of depth first search and topological sort. This post
+describes the implementations and illustrates how these classic
+algorithms may be expressed in haskell. I'll also present evidence
 that the implementations are effective in the form of criterion
 benchmarks. For now it suffices to know that the main representation
 alga uses for directed graphs is adjacency maps in the form of "
      (mono "Map a (Set a)")
      " or "
      (mono "IntMap IntSet")
-     ".")
-    (*paragraph*
-     "For more information about alga, its design, and its laws, I'd
-suggest checking out any of the following: "
-     " a series of "
-     (*link* "blog posts" ,blog-post-link) ", "
-     (*link* "this talk" ,video-link) ", "
-     (*link* "this paper" ,algebraic-graphs-with-class) " or the "
-     (*link* "documentation" ,algebraic-graphs)
      ".")))
 
 (define background
   `((*section* "Alga Background")
-    "A brief introduction to alga, explaining where the
-implementations fit in."
     (*subsection* "Core Idea")
     (*paragraph*
-     "With alga, graphs are constructed algebraically. A (di-)graph is
-some object with a set of vertices and a set edges, ordered pairs of
-vertices. Alga expresses this by "
+     "Alga deals with the construction and manipulation of
+graphs. A (di-) graph is some object with a set of vertices and a set
+edges, (ordered) pairs of vertices. The main way that alga expresses
+this is with the following data type: "
      ,core-data-type
-     "The vertices are drawn from elements of some type "
+     "Vertices are drawn from elements of some type "
      (mono "a")
      " and wrapped by the "
      (mono "Vertex")
-     " constructor. This construction is algebraic in the sense that
-there are two closed operations for building graphs from other
-graphs, "
-     (mono "Overlay")
-     " and "
-     (mono "Connect")
-     ". These operations satisfy additional axioms analogous to "
-     (mono "+")
-     " and "
-     (mono "*")
-     ". "
+     " constructor. "
      (mono "Overlay g h")
      " is the graph whose vertex and edge sets are the unions of "
      (mono "g")
@@ -249,30 +227,45 @@ graphs, "
      "'s. "
      (mono "Connect g h")
      " is the graph whose vertex and edge sets contain those from
-overlay, as well as an edge from every vertex of "
+overlay, as well as an edge for every vertex of "
      (mono "g")
      " to every vertex of "
      (mono "h")
-     ". This can be seen explicitly in the case of adjacency maps in
-the next section.")
-    (*subsection* "Construction as a DSL")
+     " . This construction is now visibly algebraic in the sense that
+there are two closed operations for building graphs from other
+graphs, "
+     (mono "Overlay")
+     " and "
+     (mono "Connect")
+     ", which in fact satisfy axioms analogous to "
+     (mono "+")
+     " and "
+     (mono "*")
+     ". In fact alga provides a cute "
+     (mono " Num ")
+     " instance, so that expressions like "
+     (mono " 1*2 ")
+     " can be used to construct an edge from 1 to 2 (note, * is
+overlay). It's also cute in the sense that it's not lawful. "
+     (mono " Num ")
+     " is usually intended for Rings, where the identities for + and *
+are distinct. Here, both overlay and connect have "
+     (mono "Empty")
+     " as identity.")
     (*paragraph*
      "The "
      (mono "Graph")
-     " data type can be seen as a DSL for graph construction. It
-corresponds to an initial encoding of the language. Alga also defines
-a final encoding with the type class "
+     " data type can be viewed as a DSL for graph construction. Alga
+also defines an encoding for this construction as a type class "
      (mono "Graph g")
      ", which requires analogues for the type constructors of the data
 type as functions "
      (mono "empty, vertex, overlay, connect")
-     " for membership.")
-    (*paragraph*
-     "The type class "
+     ". Another type class "
      (mono "ToGraph")
      " is for types that can be embedded in the "
      (mono "Graph")
-     " ADT by way of a function "
+     " data type by "
      (mono "toGraph :: ToGraph g => g -> Graph (ToVertex g)")
      ". These graph expressions may in turn be \"interpreted\" in fold
 over the "
@@ -318,7 +311,16 @@ since it works on memory-compact adjacency maps represented as "
      (mono "Array Int [Int]")
      " and is a mature module. Unfortunately, the array-based
 representation does not play well with alga's algebraic graphs, so
-it's not clear how reduce the number of conversions.")))
+it's not clear how reduce the number of conversions.")
+    (*paragraph*
+     "For more information about alga, its design, and its laws, I'd
+suggest checking out any of the following: "
+     " a series of "
+     (*link* "blog posts" ,blog-post-link) ", "
+     (*link* "this talk" ,video-link) ", "
+     (*link* "this paper" ,algebraic-graphs-with-class) " or the "
+     (*link* "documentation" ,algebraic-graphs)
+     ".")))
 
 (define depth-first-section
   `((*section* "Depth First Search")
@@ -352,9 +354,7 @@ been visited. A bottom-up description:"
 	   (item
 	    (mono "discovered v")
 	    " reports if the vertex has been discovered and marks it as
-such if not. It would be nice if in haskell (like in scheme) we could write "
-	    (mono "discovered?")
-	    " instead.")
+such if not.")
 	   (item
 	    (mono "walk v")
 	    " includes the tree from "
@@ -488,32 +488,30 @@ performance. fgl and containers don't seem to have easy support for
 working with graphs whose vertices are not type Int, so most of the
 benchmarks compare them against alga's AdjacencyIntMaps. Many of the
 graphs are borrowed from "
-     (*link* "haskell-perf/graphs." "https://github.com/haskell-perf/graphs")
-     ,real-world-graphs-summary)
-    
+     (*link* "haskell-perf/graphs." "https://github.com/haskell-perf/graphs"))
     (*paragraph*
      ,criterion-tables
      (*break*)
      "There are two benchmarks for topological sort,
-since the graphs have cycles. At first blush, it's nonsensical to
-compare implementations since the new one short circuits once it finds
-a cycle. On the other hand, the old alga implementation would first
-run "
+since the graphs have cycles. At first blush, it seems like nonsense
+to compare implementations because the new one short circuits once it
+finds a cycle. On the other hand, the old alga implementation would
+first run "
      (mono "topSort")
      " from Data.Graph and subsequently "
      (mono "guard $ isTopSortOf result")
      ". Thus, the ~6500 fold improvement over the old implementation
 is a semi-legitimate comparison on directed cyclic graphs. On DAGs,
-the improvement is ~3 fold. "
-     "The graphs are made acyclic by removing self-loops and reversing
-edges so that "
+the improvement is ~3 fold. The graphs are made acyclic by removing
+self-loops and reversing edges so that "
      (mono "(x,y) -> (min x y, max x y)")
      ". The vertices are then randomly permuted since the new topSort
 implementation considers them in sorted order."
+     ,real-world-graphs-summary     
      (*paragraph*
       "The source code for the benchmarks can be viewed at "
-      (*link* "report.hs" "https://github.com/jitwit/bench-alga/blob/master/report.hs"))
-     )))
+      (*link* "bench-alga" "https://github.com/jitwit/bench-alga/blob/master/report.hs")))))
+
 
 (define alga-dfs-post
   `(html

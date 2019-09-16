@@ -28,7 +28,6 @@ table {
     border-style: solid;
 }
 
-# haskell code highlighting
 .hs-keyword { color: sienna; }
 .hs-keyglyph { color: sienna; }
 .hs-layout { color: sienna; }

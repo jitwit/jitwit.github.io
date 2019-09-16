@@ -100,6 +100,21 @@ dfsForestFrom vs g = dfsForestFrom' [ v | v <- vs, hasVertex v g ] g
 dfs :: [Int] -> AdjacencyIntMap -> [Int]
 dfs vs = dfsForestFrom vs >=> flatten"))
 
+(define bfsnippet
+  '(*haskell* "
+bfsForestFrom' :: [Int] -> AdjacencyIntMap -> Forest Int
+bfsForestFrom' vs g = evalState (explore vs) IntSet.empty where
+  explore (v:vs) = discovered v >>= \\case
+    True -> (:) <$> unfoldTreeM_BF walk v <*> explore vs
+    False -> explore vs
+  explore [] = return []
+  walk v = (v,) <$> adjacentM v
+  adjacentM v = filterM discovered $ IntSet.toList (postIntSet v g)
+  discovered v = do new <- gets (not . IntSet.member v)
+                    when new $ modify' (IntSet.insert v)
+                    return new
+"))
+
 (define dfsnippet
   '(*haskell* "
 dfsForestFrom' :: [Int] -> AdjacencyIntMap -> Forest Int
@@ -325,65 +340,54 @@ suggest checking out any of the following: "
 (define depth-first-section
   `((*section* "Depth First Search")
     (*paragraph*
-     "Depth first search is the simplest of the
-implementations. Algorithmically, it's not too different from breadth
-first search, but it's expressed more readily in haskell due to the
-first class status of linked lists and the representation of forests
-as free lists.")
-    (*paragraph*
-     "Here is the entire implementation (currently) found in alga:"
-     ,dfsnippet)
-    (*paragraph*
-     "A depth first search forest is produced given a list of vertices
-to search. Two mutually recursive functions drive the computation, "
+     "The goal is to produce a forest of vertices by traversing a
+graph given a list of vertices to explore. It's a graph traversal when
+each vertex is expanded at most once and it's depth first when the
+tree from the head of the list is fully explored before considering
+the rest. State is used to keep track of the vertices that we have
+already been explored. Here is the complete implementation (currently)
+found in alga:"
+     ,dfsnippet
+     "Two mutually recursive functions drive the computation, "
      (mono "explore")
-     " which checks that the next vertex is unexplored and if so passes it to "
+     " and "
+     (mono "walk")
+     " . "
+     (mono "explore")
+     " takes a list of vertices and checks one by one if the next
+vertex is unexplored and if so, passes it to "
      (mono "walk")
      ". "
      (mono "walk")
-     " builds a tree from its argument, passing the neighboring
-vertices back to "
-     (mono "explore.")
-     " To this end, sufficient state is a set of vertices that have
-been visited. A bottom-up description:"
-     (enum (item
-	    (mono "adjacent v")
-	    " exists because it's more pleasant to read than "
-	    (mono "IntSet.toList (postIntSet v g)")
-	    ".")
-	   (item
-	    (mono "discovered v")
-	    " reports if the vertex has been discovered and marks it as
-such if not.")
-	   (item
-	    (mono "walk v")
-	    " includes the tree from "
-	    (mono "v")
-	    " in the forest by exploring "
-	    (mono "v")
-	    "'s neighbors.")
-	   (item
-	    (mono "explore vs")
-	    " builds a forest from all undiscovered vertices in its
-argument list.")
-	   (item
-	    (mono "evalState (explore vs) IntSet.empty")
-	    " computes the forest from "
-	    (mono "vs")
-	    ". The venerable state monad is used to thread the set of
-discovered vertices through the computation, driven by the mutually
-recursive "
-	    (mono "walk")
-	    " and "
-	    (mono "expore")
-	    ".")))
+     " builds a tree starting from its argument by exploring the
+neighboring vertices. As such, the leap from descriptive specification
+to concise implementation is pleasantly direct.")))
+
+(define breadth-first-section
+  `((*section* "Breadth First Search")
     (*paragraph*
-     (mono "dfsForestFrom\'")
-     " has the tick because it is a function internal to the
-module. The following three functions are the ones actually exported,
-matching the original API from "
-     (mono "Data.Graph") ":"
-     ,dfs-api)))
+     "The goal is to produce a forest of vertices by traversing a
+graph given a list of vertices to explore. It's a graph traversal when
+each vertex is expanded at most once and it's depth first when the
+tree from the head of the list is fully explored before considering
+the rest. State is used to keep track of the vertices that we have
+already been explored. Here is the complete implementation (currently)
+found in alga:"
+     ,bfsnippet
+     "Two mutually recursive functions drive the computation, "
+     (mono "explore")
+     " and "
+     (mono "walk")
+     " . "
+     (mono "explore")
+     " takes a list of vertices and checks one by one if the next
+vertex is unexplored and if so, passes it to "
+     (mono "walk")
+     ". "
+     (mono "walk")
+     " builds a tree starting from its argument by exploring the
+neighboring vertices. As such, the leap from descriptive specification
+to concise implementation is pleasantly direct.")))
 
 (define topological-section
   `((*section* "Topological Sort")
@@ -523,6 +527,7 @@ implementation considers them in sorted order."
      (*post-title* "Graph searches in alga")
      ,@preamble
      ,@depth-first-section
+     ,@breadth-first-section
      ,@topological-section
      ,@background
      ,@benchmarks)

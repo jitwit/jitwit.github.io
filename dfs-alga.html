@@ -6,11 +6,13 @@ describes the implementations and illustrates how these classic
 algorithms may be expressed in haskell. I'll also present evidence
 that the implementations are effective in the form of criterion
 benchmarks. For now it suffices to know that the main representation
-alga uses for directed graphs is adjacency maps in the form of <tt>Map a (Set a)</tt> or <tt>IntMap IntSet</tt>.</section></p><h2>Depth First Search</h2><p><section>Depth first search is the simplest of the
-implementations. Algorithmically, it's not too different from breadth
-first search, but it's expressed more readily in haskell due to the
-first class status of linked lists and the representation of forests
-as free lists.</section></p><p><section>Here is the entire implementation (currently) found in alga:<pre>
+alga uses for directed graphs is adjacency maps in the form of <tt>Map a (Set a)</tt> or <tt>IntMap IntSet</tt>.</section></p><h2>Depth First Search</h2><p><section>The goal is to produce a forest of vertices by traversing a
+graph given a list of vertices to explore. It's a graph traversal when
+each vertex is expanded at most once and it's depth first when the
+tree from the head of the list is fully explored before considering
+the rest. State is used to keep track of the vertices that we have
+already been explored. Here is the complete implementation (currently)
+found in alga:<pre>
 <span class='hs-definition'>dfsForestFrom'</span> <span class='hs-keyglyph'>::</span> <span class='hs-keyglyph'>[</span><span class='hs-conid'>Int</span><span class='hs-keyglyph'>]</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>AdjacencyIntMap</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Forest</span> <span class='hs-conid'>Int</span>
 <span class='hs-definition'>dfsForestFrom'</span> <span class='hs-varid'>vs</span> <span class='hs-varid'>g</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>evalState</span> <span class='hs-layout'>(</span><span class='hs-varid'>explore</span> <span class='hs-varid'>vs</span><span class='hs-layout'>)</span> <span class='hs-conid'>IntSet.empty</span> <span class='hs-keyword'>where</span>
   <span class='hs-varid'>explore</span> <span class='hs-layout'>(</span><span class='hs-varid'>v</span><span class='hs-conop'>:</span><span class='hs-varid'>vs</span><span class='hs-layout'>)</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>discovered</span> <span class='hs-varid'>v</span> <span class='hs-varop'>&gt;&gt;=</span> <span class='hs-keyglyph'>\</span><span class='hs-keyword'>case</span>
@@ -21,24 +23,31 @@ as free lists.</section></p><p><section>Here is the entire implementation (curre
   <span class='hs-varid'>adjacent</span> <span class='hs-varid'>v</span> <span class='hs-keyglyph'>=</span> <span class='hs-conid'>IntSet.toList</span> <span class='hs-layout'>(</span><span class='hs-varid'>postIntSet</span> <span class='hs-varid'>v</span> <span class='hs-varid'>g</span><span class='hs-layout'>)</span>
   <span class='hs-varid'>discovered</span> <span class='hs-varid'>v</span> <span class='hs-keyglyph'>=</span> <span class='hs-keyword'>do</span> <span class='hs-varid'>new</span> <span class='hs-keyglyph'>&lt;-</span> <span class='hs-varid'>gets</span> <span class='hs-layout'>(</span><span class='hs-varid'>not</span> <span class='hs-varop'>.</span> <span class='hs-conid'>IntSet.member</span> <span class='hs-varid'>v</span><span class='hs-layout'>)</span>
                     <span class='hs-varid'>when</span> <span class='hs-varid'>new</span> <span class='hs-varop'>$</span> <span class='hs-varid'>modify'</span> <span class='hs-layout'>(</span><span class='hs-conid'>IntSet.insert</span> <span class='hs-varid'>v</span><span class='hs-layout'>)</span>
-                    <span class='hs-varid'>return</span> <span class='hs-varid'>new</span></pre></section></p><p><section>A depth first search forest is produced given a list of vertices
-to search. Two mutually recursive functions drive the computation, <tt>explore</tt> which checks that the next vertex is unexplored and if so passes it to <tt>walk</tt>. <tt>walk</tt> builds a tree from its argument, passing the neighboring
-vertices back to <tt>explore.</tt> To this end, sufficient state is a set of vertices that have
-been visited. A bottom-up description:<ul><li><tt>adjacent v</tt> exists because it's more pleasant to read than <tt>IntSet.toList (postIntSet v g)</tt>.</li><li><tt>discovered v</tt> reports if the vertex has been discovered and marks it as
-such if not.</li><li><tt>walk v</tt> includes the tree from <tt>v</tt> in the forest by exploring <tt>v</tt>'s neighbors.</li><li><tt>explore vs</tt> builds a forest from all undiscovered vertices in its
-argument list.</li><li><tt>evalState (explore vs) IntSet.empty</tt> computes the forest from <tt>vs</tt>. The venerable state monad is used to thread the set of
-discovered vertices through the computation, driven by the mutually
-recursive <tt>walk</tt> and <tt>expore</tt>.</li></ul></section></p><p><section><tt>dfsForestFrom'</tt> has the tick because it is a function internal to the
-module. The following three functions are the ones actually exported,
-matching the original API from <tt>Data.Graph</tt>:<pre>
-<span class='hs-definition'>dfsForest</span> <span class='hs-keyglyph'>::</span> <span class='hs-conid'>AdjacencyIntMap</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Forest</span> <span class='hs-conid'>Int</span>
-<span class='hs-definition'>dfsForest</span> <span class='hs-varid'>g</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>dfsForestFrom'</span> <span class='hs-layout'>(</span><span class='hs-varid'>vertexList</span> <span class='hs-varid'>g</span><span class='hs-layout'>)</span> <span class='hs-varid'>g</span>
-
-<span class='hs-definition'>dfsForestFrom</span> <span class='hs-keyglyph'>::</span> <span class='hs-keyglyph'>[</span><span class='hs-conid'>Int</span><span class='hs-keyglyph'>]</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>AdjacencyIntMap</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Forest</span> <span class='hs-conid'>Int</span>
-<span class='hs-definition'>dfsForestFrom</span> <span class='hs-varid'>vs</span> <span class='hs-varid'>g</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>dfsForestFrom'</span> <span class='hs-keyglyph'>[</span> <span class='hs-varid'>v</span> <span class='hs-keyglyph'>|</span> <span class='hs-varid'>v</span> <span class='hs-keyglyph'>&lt;-</span> <span class='hs-varid'>vs</span><span class='hs-layout'>,</span> <span class='hs-varid'>hasVertex</span> <span class='hs-varid'>v</span> <span class='hs-varid'>g</span> <span class='hs-keyglyph'>]</span> <span class='hs-varid'>g</span>
-
-<span class='hs-definition'>dfs</span> <span class='hs-keyglyph'>::</span> <span class='hs-keyglyph'>[</span><span class='hs-conid'>Int</span><span class='hs-keyglyph'>]</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>AdjacencyIntMap</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-keyglyph'>[</span><span class='hs-conid'>Int</span><span class='hs-keyglyph'>]</span>
-<span class='hs-definition'>dfs</span> <span class='hs-varid'>vs</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>dfsForestFrom</span> <span class='hs-varid'>vs</span> <span class='hs-varop'>&gt;=&gt;</span> <span class='hs-varid'>flatten</span></pre></section></p><h2>Topological Sort</h2><p><section>Given a directed graph, we return a valid topological ordering
+                    <span class='hs-varid'>return</span> <span class='hs-varid'>new</span></pre>Two mutually recursive functions drive the computation, <tt>explore</tt> and <tt>walk</tt> . <tt>explore</tt> takes a list of vertices and checks one by one if the next
+vertex is unexplored and if so, passes it to <tt>walk</tt>. <tt>walk</tt> builds a tree starting from its argument by exploring the
+neighboring vertices. As such, the leap from descriptive specification
+to concise implementation is pleasantly direct.</section></p><h2>Breadth First Search</h2><p><section>The goal is to produce a forest of vertices by traversing a
+graph given a list of vertices to explore. It's a graph traversal when
+each vertex is expanded at most once and it's depth first when the
+tree from the head of the list is fully explored before considering
+the rest. State is used to keep track of the vertices that we have
+already been explored. Here is the complete implementation (currently)
+found in alga:<pre>
+<span class='hs-definition'>bfsForestFrom'</span> <span class='hs-keyglyph'>::</span> <span class='hs-keyglyph'>[</span><span class='hs-conid'>Int</span><span class='hs-keyglyph'>]</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>AdjacencyIntMap</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Forest</span> <span class='hs-conid'>Int</span>
+<span class='hs-definition'>bfsForestFrom'</span> <span class='hs-varid'>vs</span> <span class='hs-varid'>g</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>evalState</span> <span class='hs-layout'>(</span><span class='hs-varid'>explore</span> <span class='hs-varid'>vs</span><span class='hs-layout'>)</span> <span class='hs-conid'>IntSet.empty</span> <span class='hs-keyword'>where</span>
+  <span class='hs-varid'>explore</span> <span class='hs-layout'>(</span><span class='hs-varid'>v</span><span class='hs-conop'>:</span><span class='hs-varid'>vs</span><span class='hs-layout'>)</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>discovered</span> <span class='hs-varid'>v</span> <span class='hs-varop'>&gt;&gt;=</span> <span class='hs-keyglyph'>\</span><span class='hs-keyword'>case</span>
+    <span class='hs-conid'>True</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-layout'>(</span><span class='hs-conop'>:</span><span class='hs-layout'>)</span> <span class='hs-varop'>&lt;$&gt;</span> <span class='hs-varid'>unfoldTreeM_BF</span> <span class='hs-varid'>walk</span> <span class='hs-varid'>v</span> <span class='hs-varop'>&lt;*&gt;</span> <span class='hs-varid'>explore</span> <span class='hs-varid'>vs</span>
+    <span class='hs-conid'>False</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-varid'>explore</span> <span class='hs-varid'>vs</span>
+  <span class='hs-varid'>explore</span> <span class='hs-conid'>[]</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>return</span> <span class='hs-conid'>[]</span>
+  <span class='hs-varid'>walk</span> <span class='hs-varid'>v</span> <span class='hs-keyglyph'>=</span> <span class='hs-layout'>(</span><span class='hs-varid'>v</span><span class='hs-layout'>,</span><span class='hs-layout'>)</span> <span class='hs-varop'>&lt;$&gt;</span> <span class='hs-varid'>adjacentM</span> <span class='hs-varid'>v</span>
+  <span class='hs-varid'>adjacentM</span> <span class='hs-varid'>v</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>filterM</span> <span class='hs-varid'>discovered</span> <span class='hs-varop'>$</span> <span class='hs-conid'>IntSet.toList</span> <span class='hs-layout'>(</span><span class='hs-varid'>postIntSet</span> <span class='hs-varid'>v</span> <span class='hs-varid'>g</span><span class='hs-layout'>)</span>
+  <span class='hs-varid'>discovered</span> <span class='hs-varid'>v</span> <span class='hs-keyglyph'>=</span> <span class='hs-keyword'>do</span> <span class='hs-varid'>new</span> <span class='hs-keyglyph'>&lt;-</span> <span class='hs-varid'>gets</span> <span class='hs-layout'>(</span><span class='hs-varid'>not</span> <span class='hs-varop'>.</span> <span class='hs-conid'>IntSet.member</span> <span class='hs-varid'>v</span><span class='hs-layout'>)</span>
+                    <span class='hs-varid'>when</span> <span class='hs-varid'>new</span> <span class='hs-varop'>$</span> <span class='hs-varid'>modify'</span> <span class='hs-layout'>(</span><span class='hs-conid'>IntSet.insert</span> <span class='hs-varid'>v</span><span class='hs-layout'>)</span>
+                    <span class='hs-varid'>return</span> <span class='hs-varid'>new</span>
+</pre>Two mutually recursive functions drive the computation, <tt>explore</tt> and <tt>walk</tt> . <tt>explore</tt> takes a list of vertices and checks one by one if the next
+vertex is unexplored and if so, passes it to <tt>walk</tt>. <tt>walk</tt> builds a tree starting from its argument by exploring the
+neighboring vertices. As such, the leap from descriptive specification
+to concise implementation is pleasantly direct.</section></p><h2>Topological Sort</h2><p><section>Given a directed graph, we return a valid topological ordering
 of the vertices if it is acyclic, or we present a cycle otherwise. In
 the case that the graph is acyclic, we produce the lexicographically
 smallest such ordering (addressing an old <a href='https://github.com/snowleopard/alga/issues/2'>issue</a>). The increased demands, relative to dfs, are reflected in

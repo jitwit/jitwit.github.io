@@ -359,7 +359,7 @@ vertex is unexplored and if so, passes it to "
      (mono "walk")
      ". "
      (mono "walk")
-     " builds a tree starting from its argument by exploring the
+     " builds a tree starting from its argument by exploring its
 neighboring vertices. As such, the leap from descriptive specification
 to concise implementation is pleasantly direct.")))
 

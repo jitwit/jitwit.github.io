@@ -8,7 +8,8 @@
      (title "jitwit"))
     (body
      (*section* "Posts")
-     (*link* "Graph searches in alga" "dfs-alga.html"))
+;;     (*link* "Graph searches in alga" "dfs-alga.html")
+     )
     (*footer*)))
 
 (define (render)

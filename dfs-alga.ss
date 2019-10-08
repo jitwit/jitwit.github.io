@@ -530,7 +530,8 @@ implementation considers them in sorted order."
      ,@breadth-first-section
      ,@topological-section
      ,@background
-     ,@benchmarks)
+     ,@benchmarks
+     (*link* "facebook_graph" "https://jitwit.github.io/criterion/facebook-scc.html"))
     (*footer*)))
 
 (define (render)

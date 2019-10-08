@@ -1,4 +1,4 @@
-(import (chez sxml-mini))
+(import (sxml-mini))
 
 ;; todo make reports for csv results  
 (define (include-criterion project-dir)

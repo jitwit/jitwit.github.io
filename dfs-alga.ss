@@ -516,7 +516,6 @@ implementation considers them in sorted order."
       "The source code for the benchmarks can be viewed at "
       (*link* "bench-alga" "https://github.com/jitwit/bench-alga/blob/master/report.hs")))))
 
-
 (define alga-dfs-post
   `(html
     (head
@@ -536,5 +535,3 @@ implementation considers them in sorted order."
 
 (define (render)
   (render-page alga-dfs-post "dfs-alga.html"))
-
-

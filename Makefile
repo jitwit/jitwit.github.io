@@ -1,6 +1,7 @@
 pages ::= \
 	index \
-	dfs-alga
+	alga-benches
+# 	dfs-alga \
 
 %.html : %.ss style-sheet.ss 
 	echo "(time (render))" | scheme -q $<

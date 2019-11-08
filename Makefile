@@ -3,8 +3,8 @@ pages ::= \
 	alga-benches
 # 	dfs-alga \
 
-%.html : %.ss style-sheet.ss 
-	echo "(time (render))" | scheme -q $<
+%.html : %.ss load.ss Makefile
+	echo "(make-page \"$<\")" | scheme -q load.ss
 
 all:
 	make $(pages:=.html)

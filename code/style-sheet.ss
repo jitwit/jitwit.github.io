@@ -49,6 +49,10 @@
 		'(link (@ (rel "stylesheet")
 			  (type "text/css")
 			  (href "css/style.css")))))
+    (css . ,(lambda _
+              '(link (@ (rel "stylesheet")
+                        (type "text/css")
+                        (href "css/style.css")))))
     (css-from . ,(lambda (_ n)
                    `(link (@ (rel "stylesheet")
                              (type "text/css")

@@ -1,17 +1,15 @@
-pages ::= \
+pages := \
 	index \
-	alga-benches
-# 	dfs-alga \
+	benchmarks/index \
+	posts/dfs-alga
 
-%.html : %.ss load.ss Makefile
-	echo "(make-page \"$<\")" | scheme -q load.ss
-
-all:
+all :
 	make $(pages:=.html)
 
-clean:
-#	rm $(pages:=.html)
-	rm *~
-	rm css/*~
+%.html : %.ss load.ss
+	echo "(make-page \"$<\")" | scheme -q load.ss
 
-# .PHONY: all
+clean :
+	find . -name "*~" -exec rm {} \;
+
+.PHONY : clean

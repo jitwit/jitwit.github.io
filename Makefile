@@ -10,7 +10,7 @@ all:
 	make $(pages:=.html)
 
 clean:
-	rm $(pages:=.html)
+#	rm $(pages:=.html)
 	rm *~
 	rm css/*~
 

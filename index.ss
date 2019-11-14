@@ -7,7 +7,9 @@
      (title "jitwit"))
     (body
      (section 2 "Posts")
-     (link "Depth First Search for alga" "posts/dfs-alga.html")
+     (ul
+      (li (link "Depth First Search for alga" "posts/dfs-alga.html"))
+      (li (link "Distance with Scmutils" "posts/distance-sphere.html")))
      (section 2 "Other")
      (link "Benchmarks" "benchmarks/index.html"))
     (footer)))

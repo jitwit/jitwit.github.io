@@ -1,0 +1,62 @@
+<html><head><link rel='stylesheet' type='text/css' href='../css/style.css'/><meta charset='UTF-8'/><title>Distance on a map</title></head><body><h1>Distance on a map</h1><p>This is a scribble using scmutils. The task is to calculate
+the distance between two <code>(lon,lat)</code> points on the globe.</p><h2>Scmutils</h2><p>A brief demonstration of how cool scmutils is.</p><p>Let's define a fucntion to go from coordinates on a map to a point in <code>R^3</code>.</p><p><code>(define (map-&gt;globe theta phi)
+  (+ (* earth-radius (cos theta) (up (cos phi) (sin phi) 0))
+     (* earth-radius (up 0 0 (sin theta)))))
+
+
+</code></p><p>We can punch in the north pole and get<p><code>&gt; (map-&gt;globe pi/2 'phi)
+
+
+</code><br><code>(up (&amp; (* 3.901112378683894e-10 (cos phi)) &amp;meter)
+    (&amp; (* 3.901112378683894e-10 (sin phi)) &amp;meter)
+    (&amp; 6371000.0 &amp;meter))
+
+
+</code></p></p><p>Or leave it all abstract<p><code>&gt; (map-&gt;globe 'theta 'phi)
+
+
+</code><br><code>(up (&amp; (* 6371000.0 (cos phi) (cos theta)) &amp;meter)
+    (&amp; (* 6371000.0 (sin phi) (cos theta)) &amp;meter)
+    (&amp; (* 6371000.0 (sin theta)) &amp;meter))
+
+
+</code></p></p><p>Or how about montreal<p><code>&gt; (map-&gt;globe
+  (degrees-&gt;radians 45.5)
+  (degrees-&gt;radians -73.5))
+
+
+</code><br><code>(up (&amp; 1268268.5117574057 &amp;meter)
+    (&amp; -4281602.740347 &amp;meter)
+    (&amp; 4544118.611561291 &amp;meter))
+
+
+</code></p></p><h2>Distance</h2><p>So anyway, the distance between two points on the map can be found
+with the angle between the vectors on the globe. That can be done with a dot product.</p><p>Let's take Montreal to New York as the cow flies</p><p><code>&gt; (* earth-radius
+   (acos
+     (/ (dot-product
+          (map-&gt;globe
+            (degrees-&gt;radians 45.5)
+            (degrees-&gt;radians -73.7))
+          (map-&gt;globe
+            (degrees-&gt;radians 49.2)
+            (degrees-&gt;radians -123.2)))
+        (expt earth-radius 2))))
+
+
+</code><br><code>(&amp; 3684655.1909034215 &amp;meter)
+
+
+</code></p><p>A quick google search for the flight distance gave 3,680 km. Hooray.</p><p>And how about Montreal to Mount Kilimanjaro</p><p><code>&gt; (* earth-radius
+   (acos
+     (/ (dot-product
+          (map-&gt;globe
+            (degrees-&gt;radians 45.5)
+            (degrees-&gt;radians -73.7))
+          (map-&gt;globe (degrees-&gt;radians -3) (degrees-&gt;radians 37.4)))
+        (expt earth-radius 2))))
+
+
+</code><br><code>(&amp; 11877455.985242916 &amp;meter)
+
+
+</code></p><p>Google says 11,862 km.</p></body><footer>updated: 14/11/2019</footer></html>

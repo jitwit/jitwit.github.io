@@ -1,4 +1,6 @@
-(import (sxml-mini))
+(import (sxml-mini)
+        (scmutils base)
+        (scmutils generic))
 
 (define src-files
   '("code/style-sheet.ss"
@@ -10,5 +12,4 @@
   ;;; each *.ss file that's a should defines variable page to be its
   ;;; content...
   (load page.ss)
-  (render-page page
-               (string-append (path-root page.ss) ".html")))
+  (render-page page (string-append (path-root page.ss) ".html")))

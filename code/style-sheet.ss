@@ -92,6 +92,18 @@
                                          (date-year now))))
                      `(footer
                        ,build))))
+    (scheme-eval *macro* . ,(lambda (_ expr)
+                              `(p
+                                (code ,(string-append "> "
+                                                      (with-output-to-string
+                                                       (lambda () (show-expression expr)))))
+                                (br)
+                                (code ,(with-output-to-string
+                                        (lambda () (show-expression (eval expr))))))))
+    (scheme-define *macro* . ,(lambda (_ expr)
+                                `(p
+                                  (code ,(with-output-to-string
+                                          (lambda () (show-expression expr)))))))
     (footer . ,(lambda x
                  (let* ((now (current-date))
                         (build (format "updated: ~a/~a/~a"

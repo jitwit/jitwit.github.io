@@ -104,6 +104,8 @@
                                 `(p
                                   (code ,(with-output-to-string
                                           (lambda () (show-expression expr)))))))
+    (mathml . ,(lambda (_ expr)
+                 (scheme->mathml expr)))
     (footer . ,(lambda x
                  (let* ((now (current-date))
                         (build (format "updated: ~a/~a/~a"
@@ -120,3 +122,5 @@
          `(,@(intersperse "/"(make-list n ".."))
            "/"
            ,href)))
+
+

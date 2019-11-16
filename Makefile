@@ -2,7 +2,10 @@ pages := \
 	index \
 	benchmarks/index \
 	posts/dfs-alga \
-	posts/distance-sphere
+	posts/distance-sphere \
+	posts/math-html \
+	posts/diff-geo \
+	posts/diff-geo/ex2-1
 
 all : $(pages:=.ss)
 	make $(pages:=.html)

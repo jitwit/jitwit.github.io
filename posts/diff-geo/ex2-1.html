@@ -1,0 +1,21 @@
+<html><head><link rel='stylesheet' type='text/css' href='../../css/style.css'/><meta charset='UTF-8'/><title>Exercise 2.1</title></head><body><h2>a) Lemniscate of Bernoulli</h2><p><code>&gt; part-a
+
+
+</code><br><code>(+ (* -4 (expt a 2) (expt r 2) (expt (cos theta) 2))
+   (* 2 (expt a 2) (expt r 2))
+   (expt r 4))
+
+
+</code></p><p>This simplifies to <p><code>&gt; '(+ (* -2 (expt a 2) (cos (* 2 theta))) (expt r 2))
+
+
+</code><br><code>(+ (* -2 (expt a 2) (cos (* 2 theta))) (expt r 2))
+
+
+</code></p> with some help from pen and paper.</p><h2>b) Helix</h2><p>Take the helix to have constant <code>R</code> and naked <code>theta</code> and scaled <code>z</code>. Then <code>theta = a*z</code> which gives: <p><code>&gt; part-b
+
+
+</code><br><code>(+ (* -1 z a) (atan y x))
+
+
+</code></p></p></body></html>

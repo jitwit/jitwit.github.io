@@ -8,8 +8,7 @@
     (body
      (section 2 "Posts")
      (ul
-      (li (link "Depth First Search for alga" "posts/dfs-alga.html"))
-      (li (link "Distance with Scmutils" "posts/distance-sphere.html")))
-     (section 2 "Other")
-     (link "Benchmarks" "benchmarks/index.html"))
+      (li (link "Diff Geo" "posts/diff-geo.html"))
+      (li (link "Alga Benchmarks" "benchmarks/index.html"))
+      (li (link "Depth First Search for alga" "posts/dfs-alga.html"))))
     (footer)))

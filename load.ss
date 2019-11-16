@@ -1,10 +1,13 @@
 (import (sxml-mini)
+        (matchable)
         (scmutils base)
-        (scmutils generic))
+        (scmutils generic)
+        (scmutils calculus))
 
 (define src-files
-  '("code/style-sheet.ss"
-    "code/outils.ss"))
+  '("code/outils.ss"
+    "code/mathml.ss"
+    "code/style-sheet.ss"))
 
 (for-all load src-files)
 

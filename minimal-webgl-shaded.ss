@@ -9,7 +9,7 @@
        (js-script 0 "js/utils.js")
        (js-script 0 "js/minimal_webgl_shaded.js"))
       (body
-       (section 1 "still ok?")
+       (section 1 "webgl?")
        (canvas (@ (id "canvas")
                   (width ,canvas-width)
                   (height ,canvas-height))))

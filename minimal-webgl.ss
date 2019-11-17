@@ -8,7 +8,7 @@
        (css)
        (js-script 0 "js/minimal_webgl.js"))
       (body
-       (section 1 "ok?")
+       (section 1 "webgl?")
        (canvas (@ (id "canvas")
                   (width ,canvas-width)
                   (height ,canvas-height))))

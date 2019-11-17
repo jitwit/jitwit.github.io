@@ -12,6 +12,7 @@ dfsForestFrom' vs g = evalState (explore vs) IntSet.empty where
   discovered v = do new <- gets (not . IntSet.member v)
                     when new $ modify' (IntSet.insert v)
                     return new"))
+
 (define page
   `(html
     (head

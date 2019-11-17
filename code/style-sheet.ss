@@ -57,6 +57,9 @@
                    `(link (@ (rel "stylesheet")
                              (type "text/css")
                              (href ,(rel-link-from-depth n "css/style.css"))))))
+    (js-script . ,(lambda (_ n script)
+                    `(script (@ (src ,script))
+                             "")))
     (*post-title* . ,(lambda (_ title)
                        `(h1 ,title)))
     (*section* . ,(lambda (_ title)
@@ -71,8 +74,8 @@
                        `(h3 ,title)))
     (*paragraph* . ,(lambda (_ . nodes)
                       `(p (section ,@nodes))))
-    (script . ,(lambda (_ s)
-                 `(script (*raw-html* ,s))))
+    (*script* . ,(lambda (_ s)
+                   `(script (*raw-html* ,s))))
     ;; fetch .html files assumed to be criterion reports from the
     ;; given directory.
     (*criterion-reports* . ,(lambda (_ project)

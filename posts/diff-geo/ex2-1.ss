@@ -12,12 +12,10 @@
   (simplify (lemniscate ((point R2-polar) (up 'r 'theta)))))
 
 (define helix
-  (- theta
-     (* 'a z)))
+  (- theta (* 'a z)))
 
 (define part-b
   (simplify (helix ((point R3-rect) (up 'x 'y 'z)))))
-
 
 (define page
   `(html
@@ -31,6 +29,10 @@
      (p "This simplifies to "
         (scheme-eval '(- (expt r 2) (* 2 (expt a 2) (cos (* 2 theta)))))
         " with some help from pen and paper.")
+     (canvas (@ (id "A")
+                (width "500")
+                (height "500"))
+             ())
      (section 2 "b) Helix")
      (p "Take the helix to have constant "
         (code "R")
@@ -41,4 +43,8 @@
         " Then "
         (code "theta = a*z")
         " which gives: "
-        (scheme-eval part-b)))))
+        (scheme-eval part-b)
+        (canvas (@ (id "B")
+                   (width "500")
+                   (height "500"))
+                ())))))

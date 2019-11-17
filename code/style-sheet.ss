@@ -71,6 +71,8 @@
                        `(h3 ,title)))
     (*paragraph* . ,(lambda (_ . nodes)
                       `(p (section ,@nodes))))
+    (script . ,(lambda (_ s)
+                 `(script (*raw-html* ,s))))
     ;; fetch .html files assumed to be criterion reports from the
     ;; given directory.
     (*criterion-reports* . ,(lambda (_ project)

@@ -20,7 +20,7 @@
                           (cons* sep x y))
                         '()
                         xs)))
-    (if (null? (cdr xs))
+    (if (or (null? xs) (null? (cdr xs)))
         '()
         (cdr xs))))
 

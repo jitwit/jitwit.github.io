@@ -1,24 +1,33 @@
 var vs_src = `#version 300 es
 in vec2 pos;
-out vec2 gogo;
+out vec2 p;
 void main(void) {
   gl_Position = vec4(pos,0,1);
-  gogo = pos;
+  p = pos;
 }
 `;
 
 var frag_src = `#version 300 es
-precision mediump float;
-in vec2 gogo;
+precision lowp float;
+in vec2 p;
 out vec4 clr;
-float pi = acos(0.0)*2.0;
+
+float iter (in vec2 c)
+{
+  float n = 0.0; float b = 256.0; vec2 z = vec2(0.0);
+
+  for (;n<200.0;n++) 
+  { z = vec2(z.x*z.x-z.y*z.y,2.0*z.x*z.y) + c; // z <- z^2 + c
+    if (dot(z,z)>b*b) break;
+  }
+
+  return (n - log2(log2(dot(z,z))) + 4.0)/14.0;
+}
+
 void main (void) { 
-  float x,y;
-  x = 0.5*gogo.x+0.5;
-  y = 0.5*gogo.y+0.5;
-  x = max(0.0,min(1.0,x));
-  y = max(0.0,min(1.0,y));
-  clr = vec4(tan(13.0*x)*cos(12.0*y),pow(y,0.9),pow(x,0.8),1);
+  float s = iter(1.5*(p-vec2(0.5,0.0)));
+  vec3 c = vec3(s,0.3+0.4*s,(1.0-s)*0.39);
+  clr = vec4(c,1.0);
 }
 `;
 
@@ -43,7 +52,6 @@ window.onload = function () {
     gl.attachShader(program,fs);
     gl.linkProgram(program);
     gl.useProgram(program);
-    gl.deleteProgram(program);
     
     // init step 2
     var pos = gl.getAttribLocation(program,"pos");
@@ -55,8 +63,6 @@ window.onload = function () {
     gl.vertexAttribPointer(pos,2,gl.FLOAT,false,0,0);
     gl.enableVertexAttribArray(pos);
 
-//    gl.viewport(0,0,gl.canvas.width,gl.canvas.height);
-//    gl.bindVertexArray(vao);
     gl.drawArrays(gl.TRIANGLE_FAN,0,4);
     
 };

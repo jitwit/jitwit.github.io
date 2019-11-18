@@ -1,15 +1,14 @@
 (define page
-  (let ((canvas-width "500")
-        (canvas-height "500"))
+  (let ((canvas-width "800")
+        (canvas-height "800"))
     `(html
       (head
-       (title "SHADED?")
+       (title "mandelbrot")
        (meta (@ (charset "UTF-8")))
-       (css)
-       (js-script 0 "js/utils.js")
-       (js-script 0 "js/minimal_webgl_shaded.js"))
+       (css-from 1)
+       (js-script 1 "js/mandelbrot.js"))
       (body
-       (section 1 "webgl?")
+       (section 1 "Mandelbrot")
        (canvas (@ (id "canvas")
                   (width ,canvas-width)
                   (height ,canvas-height))))

@@ -58,7 +58,7 @@
                              (type "text/css")
                              (href ,(rel-link-from-depth n "css/style.css"))))))
     (js-script . ,(lambda (_ n script)
-                    `(script (@ (src ,script))
+                    `(script (@ (src ,(rel-link-from-depth n script)))
                              "")))
     (*post-title* . ,(lambda (_ title)
                        `(h1 ,title)))
@@ -101,14 +101,14 @@
                               `(p
                                 (code ,(string-append "> "
                                                       (with-output-to-string
-                                                       (lambda () (show-expression expr)))))
+                                                        (lambda () (show-expression expr)))))
                                 (br)
                                 (code ,(with-output-to-string
-                                        (lambda () (show-expression (eval expr))))))))
+                                         (lambda () (show-expression (eval expr))))))))
     (scheme-define *macro* . ,(lambda (_ expr)
                                 `(p
                                   (code ,(with-output-to-string
-                                          (lambda () (show-expression expr)))))))
+                                           (lambda () (show-expression expr)))))))
     (mathml . ,(lambda (_ expr)
                  (scheme->mathml expr)))
     (footer . ,(lambda x
@@ -123,9 +123,11 @@
     (*text* . ,(lambda (tag str) str))))
 
 (define (rel-link-from-depth n href)
-  (apply string-append
-         `(,@(intersperse "/"(make-list n ".."))
-           "/"
-           ,href)))
+  (if (zero? n)
+      href
+      (apply string-append
+             `(,@(intersperse "/" (make-list n ".."))
+               "/"
+               ,href))))
 
 

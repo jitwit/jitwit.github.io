@@ -64,5 +64,4 @@ window.onload = function () {
     gl.enableVertexAttribArray(pos);
 
     gl.drawArrays(gl.TRIANGLE_FAN,0,4);
-    
 };

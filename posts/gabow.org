@@ -1,0 +1,95 @@
+
+* Gabow's Algorithm for Strongly Connected Components
+
+** Intro
+
+  The CLSR algorithm for finding the Strongly Connected Components of
+  a graph involves two depth first traversals, including one over the
+  transpose of a graph, to find the SCCs by comparing vertex
+  enter/exit times between the two traversals. A nice alternative is
+  to be able to infer the same information by maintaining information
+  about the path from the root vertex to the current vertex. Many
+  versions of this approach have been [[https://en.wikipedia.org/wiki/Path-based_strong_component_algorithm][discovered]]. Here, I'll
+  illustrate the most recent iteration by Gabow and discuss its
+  implementation in haskell for the [[https://github.com/snowleopard/alga][alga]] graph library.
+
+*** Definitions
+
+  A graph is a set of vertices and edges between them. Here we look at
+  directed graphs, where the edges are ordered pairs. A path in a
+  graph is an ordered collection of edges such that consectutive edges
+  in share a vertex, ie (u,v), (v,w), for some vertices u,v,w. A
+  component is a subset of vertices and the edges between them. A
+  strongly connected component is a component such that for any two
+  vertices in it, there exists a path between them. 
+
+  DFS?
+  
+*** Overview
+
+  Two stacks of vertices are maintained during traversal of the graph,
+  the /path stack/, which holds vertices in the path from root of the
+  current search tree to the current vertex and the /boundary stack/,
+  which holds the collection of vertices in the current search tree
+  whose SCC is still being determined. 
+
+  There are two counters, one for assigning SCCs to vertices, and the
+  other for tracking vertex enter times, or /preorder/
+  identities. Every time a vertex u is entered, it is given a preorder
+  id (ie enter time) and it is put on both the boundary and path
+  stacks. For each outgoing edge (u,v), the status of v informs what
+  to do next. If v is unexplored the traversal continues. If v has
+  been visited, its preorder id is necessarily less than u's. If v has
+  not been associated to some SCC, u and v must be in the same SCC,
+  and the boundary stack can be simplified (more on this
+  later). Otherwise, they can't be in the same SCC.
+
+  When exiting a vertex u, the status of the boundary stack informs us
+  whether or not a new SCC has been discovered. If u is at the top of
+  the stack, no edges to vertices with a lower preorder time exist
+  (they would have been discovered traversing that subtree). Otherwise
+  some vertex in the subtree points to a vertex higher up in the
+  current path. That means that a path from u to that higher vertex
+  exists, and we keep building this current component up.
+
+** Haskell Representation
+
+  The state of the traversal is built from the above components. While
+  not stated above, tables associating vertices to SCCs and preorder
+  times must be maintained, too. A structure to hold the state might
+  look like the following in haskell:
+
+#+BEGIN_SRC haskell
+data StateSCC a
+  = C { current       :: !Int
+      , componentId   :: !Int
+      , boundary      :: ![a]
+      , dfsPath       :: ![a]
+      , preorders     :: !(Map.Map a Int)
+      , components    :: !(Map.Map a Int)
+      }
+#+END_SRC
+
+  Vertices are of type ~a~. The counters are ~current~ and
+  ~componentId~ for preorder times and SCCs respectively. The boundary
+  stack ~boundary~ is a list of vertices and the the path stack
+  ~dfsPath~ is, too. Two tables hold the associations from vertex to
+  id.
+
+#+BEGIN_SRC haskell
+gabowSCC :: Ord a => AdjacencyMap a -> State (StateSCC a) ()
+gabowSCC g =
+  do let dfs u = do enter u -- give u preorder id and put on stacks
+                    forM_ (adjacent u) $ \v -> do -- for v in out edges
+                      preorderId v >>= \case
+                        Nothing  -> dfs v -- if v not seen, dfs v
+                        Just p_v -> do
+                          scc_v <- hasComponent v -- if v has not been assigned, adjust stacks
+                          unless scc_v $ popBoundary p_v -- put reachable vertex with lowest preorder id on top
+                    exit u
+     forM_ (vertexList g) $ \v -> do -- usual dfs of graph
+       assigned <- hasPreorderId v
+       unless assigned $ dfs v  -- vertex traversed iff it has(no)PreorderId
+#+END_SRC  
+
+  
